@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>La fábrica celular: presentación interactiva (Copy)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0D1726;--panel:#15223A;--panel2:#1C2C48;--line:#2C4063;--ink:#E8EEF6;--muted:#A3B4CB;
+  --prot:#4CC9F0;--carb:#FFB547;--lip:#9BE564;--mito:#C77DFF;--bad:#FF7A7A;--dark:#0D1726;
+  color-scheme:dark;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0D1726;--ink:#E8EEF6}}
+:root[data-theme="dark"]{--bg:#0D1726;--ink:#E8EEF6}
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px);background:var(--bg)}
+body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:'Atkinson Hyperlegible',system-ui,-apple-system,'Segoe UI',sans-serif;overflow:hidden}
+button{font-family:inherit;color:inherit}
+button:focus-visible,[tabindex]:focus-visible{outline:3px solid #fff;outline-offset:3px}
+#app{height:100%;display:flex;flex-direction:column}
+#viewport{position:relative;flex:1;min-height:0;overflow:hidden}
+#stage{position:absolute;left:50%;top:50%;width:1600px;height:900px;transform-origin:center center}
+
+/* ---------- Diapositivas ---------- */
+.slide{position:absolute;inset:0;padding:64px 88px 56px;display:flex;flex-direction:column;opacity:0;visibility:hidden;transition:opacity .45s ease,visibility .45s}
+.slide.on{opacity:1;visibility:visible}
+h1,h2,h3{font-family:'Bricolage Grotesque',system-ui,sans-serif;margin:0;font-weight:700;letter-spacing:-.015em}
+h2{font-size:56px;line-height:1.05}
+.tag{display:inline-flex;align-items:center;gap:12px;font-size:22px;color:var(--muted);margin:0 0 14px}
+.tag::before{content:"";width:14px;height:14px;border-radius:50%;background:var(--c,var(--prot));box-shadow:0 0 14px var(--c,var(--prot))}
+.lead{font-size:26px;line-height:1.45;color:var(--muted);max-width:1150px;margin:18px 0 0}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:32px}
+.body{flex:1;min-height:0;margin-top:32px;display:flex;gap:40px}
+.btn{font:700 20px/1.1 'Atkinson Hyperlegible',system-ui,sans-serif;padding:14px 22px;border-radius:12px;border:2px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:10px;transition:border-color .2s,background .2s}
+.btn:hover{border-color:var(--c,var(--prot))}
+.btn.primary{background:var(--c,var(--prot));border-color:transparent;color:var(--dark)}
+.btn.on{background:var(--c,var(--prot));border-color:transparent;color:var(--dark)}
+.btn .dot{width:12px;height:12px;border-radius:50%;background:var(--c)}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:28px}
+.card h3{font-size:30px;margin-bottom:10px}
+.card p{font-size:23px;line-height:1.45;margin:0;color:#D3DDEA}
+.muted{color:var(--muted)}
+
+/* ---------- Célula SVG ---------- */
+.cellbox svg{width:100%;height:100%;display:block;overflow:visible}
+.org{transition:opacity .3s ease}
+.cell.int .org{cursor:pointer}
+.cell.focus .org:not(.sel){opacity:.14}
+.hit{fill:transparent;stroke:none;pointer-events:all}
+.hitS{fill:none;stroke:transparent;stroke-width:80px;pointer-events:stroke}
+.cover .org{animation:grow .7s ease both}
+@keyframes grow{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+
+/* ---------- Portada ---------- */
+.cover{flex-direction:row;align-items:center;gap:48px}
+.cover .txt{flex:1}
+.cover h1{font-size:118px;line-height:.93;font-weight:800;letter-spacing:-.035em}
+.cover .sub{font-size:30px;line-height:1.35;color:var(--muted);margin:28px 0 40px;max-width:660px}
+.cover .who{font-size:21px;color:var(--muted);margin-top:44px}
+.cover .cellbox{width:660px;height:585px;flex:none}
+
+/* ---------- Almuerzo ---------- */
+.flips{display:flex;gap:28px;margin-top:40px}
+.flip{flex:1;height:350px;perspective:1400px;cursor:pointer;background:none;border:0;padding:0;text-align:center}
+.flip .in{position:relative;display:block;width:100%;height:100%;transition:transform .6s ease;transform-style:preserve-3d}
+.flip.open .in{transform:rotateY(180deg)}
+.flip .f,.flip .b{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:32px}
+.flip .f{background:var(--panel);border:1px solid var(--line)}
+.flip .b{background:var(--panel2);border:2px solid var(--c);transform:rotateY(180deg);box-shadow:0 0 40px -12px var(--c)}
+.flip .emo{font-size:108px;line-height:1}
+.flip .nm{font:700 36px 'Bricolage Grotesque',sans-serif}
+.flip .hint{font-size:19px;color:var(--muted)}
+.flip .b .mol{font:800 46px 'Bricolage Grotesque',sans-serif;color:var(--c)}
+.flip .b .ds{font-size:24px;line-height:1.4}
+.pista{margin-top:32px;display:flex;align-items:center;gap:20px}
+.pista p{font-size:28px;margin:0;color:var(--mito);font-style:italic}
+
+/* ---------- Protagonistas ---------- */
+.p3 .cellbox{width:660px;height:585px;flex:none}
+.info{flex:1;display:flex;flex-direction:column;gap:22px}
+.opanel{background:var(--panel);border:1px solid var(--line);border-left:8px solid var(--c,#3B5578);border-radius:18px;padding:30px 34px;min-height:320px;transition:border-color .3s}
+.opanel h3{font-size:42px;color:var(--c,var(--ink));margin-bottom:12px}
+.opanel p{font-size:24px;line-height:1.45;margin:0}
+.mtags{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.mtags span{font-size:18px;font-weight:700;padding:7px 14px;border-radius:8px;color:var(--dark);background:var(--c)}
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{font:700 18px 'Atkinson Hyperlegible',sans-serif;padding:10px 16px;border-radius:999px;border:2px solid var(--c);background:transparent;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.chip::before{content:"";width:12px;height:12px;border-radius:50%;background:var(--c)}
+.chip.on{background:var(--c);color:var(--dark)}
+.chip.on::before{background:var(--dark)}
+
+/* ---------- Mapa ---------- */
+table.map{width:100%;border-collapse:separate;border-spacing:0 6px;font-size:23px;margin-top:24px}
+.map th{text-align:left;font:700 24px 'Bricolage Grotesque',sans-serif;padding:8px 18px;color:var(--c,var(--muted))}
+.map td{background:var(--panel);padding:13px 18px;transition:opacity .3s,box-shadow .3s}
+.map td:first-child{border-radius:12px 0 0 12px;font-weight:700;border-left:6px solid var(--oc)}
+.map td:last-child{border-radius:0 12px 12px 0}
+.map[data-f="p"] td:not(:first-child):not(.p),.map[data-f="c"] td:not(:first-child):not(.c),.map[data-f="l"] td:not(:first-child):not(.l){opacity:.2}
+.map[data-f="p"] td.p{box-shadow:inset 0 -3px 0 var(--prot)}
+.map[data-f="c"] td.c{box-shadow:inset 0 -3px 0 var(--carb)}
+.map[data-f="l"] td.l{box-shadow:inset 0 -3px 0 var(--lip)}
+
+/* ---------- Divisores ---------- */
+.divider{justify-content:center}
+.divider .big{font:800 170px/.9 'Bricolage Grotesque',sans-serif;letter-spacing:-.045em;color:var(--c);text-shadow:0 0 50px color-mix(in srgb,var(--c) 45%,transparent)}
+.divider .lead{font-size:34px;color:var(--ink);max-width:1050px;margin-top:28px}
+.agenda{display:flex;gap:28px;list-style:none;padding:0;margin:64px 0 0;counter-reset:a}
+.agenda li{flex:1;max-width:380px;border-top:3px solid var(--c);padding-top:18px;font-size:24px;line-height:1.35;color:var(--muted);counter-increment:a}
+.agenda li::before{content:"Parte " counter(a);display:block;font-weight:700;color:var(--ink);margin-bottom:6px}
+
+/* ---------- Origen ---------- */
+.scn{width:560px;flex:none;display:flex;flex-direction:column;gap:22px}
+.scn .card p{font-size:25px}
+.res{flex:1}
+.res .ph{height:100%;border:2px dashed var(--line);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--muted);text-align:center;padding:40px}
+.res .card{border-left:8px solid var(--c);height:100%}
+.res .card h3{font-size:40px;color:var(--c)}
+.res .dest{font-size:25px;font-weight:700;margin:14px 0 18px}
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:26px}
+.flow .nd{padding:12px 18px;border-radius:12px;background:var(--panel2);border:2px solid var(--c);font-size:21px;font-weight:700;opacity:0;animation:nin .4s ease forwards}
+.flow .ar{color:var(--muted);font-size:24px;opacity:0;animation:nin .4s ease forwards}
+@keyframes nin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* ---------- Ruta secretora ---------- */
+.track{position:relative;height:250px;margin-top:12px}
+.st{position:absolute;top:10px;width:200px;height:170px;border-radius:18px;background:var(--panel);border:2px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;padding:12px;transition:transform .35s,border-color .35s,box-shadow .35s,opacity .35s;opacity:.55}
+.st b{font:700 25px 'Bricolage Grotesque',sans-serif}
+.st span{font-size:18px;color:var(--muted);line-height:1.25}
+.st.done{opacity:1;border-color:color-mix(in srgb,var(--c) 55%,transparent)}
+.st.on{opacity:1;border-color:var(--c);box-shadow:0 0 34px -6px var(--c);transform:translateY(-8px)}
+.tline,.tfill{position:absolute;left:100px;top:218px;height:4px;border-radius:2px}
+.tline{right:100px;background:var(--line)}
+.tfill{background:var(--prot);width:0;transition:width .8s ease}
+.pdot{position:absolute;top:202px;left:82px;width:36px;height:36px;border-radius:50%;background:#fff;border:6px solid var(--prot);transition:left .8s ease,box-shadow .5s}
+.pdot.s1{box-shadow:0 0 0 5px rgba(255,181,71,.55)}
+.pdot.s2{box-shadow:0 0 0 10px var(--carb)}
+.stepbar{display:flex;gap:28px;align-items:stretch;margin-top:20px}
+.stepbar .card{flex:1}
+.stepbar .card h3{font-size:34px;color:var(--c,var(--ink))}
+.ctrl{display:flex;flex-direction:column;gap:10px;width:300px;flex:none}
+.ctrl .row .btn{flex:1;justify-content:center}
+.stepn{font-size:19px;color:var(--muted);text-align:center;margin-top:4px}
+
+/* ---------- Pestañas ---------- */
+.tp{display:none}
+.tp.on{display:block}
+.tabpanel{margin-top:26px;border-left:8px solid var(--c)}
+.tabpanel h3{font-size:40px;color:var(--c)}
+.tabpanel .sub{font-size:22px;color:var(--muted);margin:6px 0 16px}
+
+/* ---------- Tarjetas por revelar ---------- */
+.rgrid{display:grid;gap:22px;margin-top:28px}
+.rcard{text-align:left;background:var(--panel);border:1px solid var(--line);border-top:6px solid var(--c);border-radius:18px;padding:26px 30px;cursor:pointer;display:flex;flex-direction:column;gap:10px}
+.rcard .where{font-size:21px;font-weight:700;color:var(--c)}
+.rcard .q{font-size:23px;color:var(--muted)}
+.rcard .what{font:700 32px 'Bricolage Grotesque',sans-serif;display:none}
+.rcard .ex{font-size:22px;line-height:1.45;color:#D3DDEA;display:none}
+.rcard.open .q{display:none}
+.rcard.open .what,.rcard.open .ex{display:block}
+.rcard.open{box-shadow:0 0 36px -14px var(--c)}
+
+/* ---------- Glucosa ---------- */
+.gtrack{position:relative;height:330px;margin-top:8px}
+.reg{position:absolute;top:0;height:330px}
+.reg.cy{left:0;width:560px;background:#132038;border:1px dashed var(--line);border-radius:24px}
+.reg.mi{left:590px;width:834px;background:rgba(199,125,255,.07);border:2px solid rgba(199,125,255,.5);border-radius:130px}
+.reg .lb{position:absolute;top:16px;font-size:20px;font-weight:700}
+.gn{position:absolute;top:80px;height:140px;border-radius:18px;background:var(--panel);border:2px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10px;gap:6px;opacity:.35;transition:opacity .4s,border-color .4s,box-shadow .4s}
+.gn b{font:700 26px 'Bricolage Grotesque',sans-serif}
+.gn span{font-size:18px;color:var(--muted)}
+.gn.done{opacity:1}
+.gn.on{opacity:1;border-color:var(--c);box-shadow:0 0 30px -6px var(--c)}
+.gn.kr{border-radius:50%;top:55px;height:200px;border-style:dashed}
+.gn.kr.on{animation:spin 8s linear infinite}
+.gn.kr.on b,.gn.kr.on span{animation:spin 8s linear infinite reverse}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ga{position:absolute;top:148px;height:4px;background:var(--line)}
+.ga::after{content:"";position:absolute;right:-6px;top:-8px;border-left:14px solid var(--line);border-top:10px solid transparent;border-bottom:10px solid transparent}
+.gdot{position:absolute;top:286px;left:129px;width:22px;height:22px;border-radius:50%;background:var(--carb);box-shadow:0 0 16px var(--carb);transition:left .8s ease,background .5s,box-shadow .5s}
+.counters{display:flex;gap:12px}
+.ct{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 18px;min-width:128px}
+.ct b{display:block;font:800 36px 'Bricolage Grotesque',sans-serif;color:var(--c)}
+.ct span{font-size:18px;color:var(--muted)}
+.pop{position:absolute;right:88px;bottom:70px;width:560px;z-index:3;display:none;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.pop.on{display:block}
+.pop .card+.card{margin-top:12px}
+
+/* ---------- β-oxidación ---------- */
+.bpanel{flex:1;display:flex;flex-direction:column;gap:22px}
+.chain{display:flex;align-items:center;gap:14px;height:64px}
+.coa{background:var(--mito);color:var(--dark);font-weight:700;font-size:22px;padding:10px 16px;border-radius:12px}
+.cs{display:flex;gap:6px;align-items:center}
+.cs i{display:block;width:40px;height:40px;border-radius:50%;background:var(--lip);border:3px solid #5E9E33;transition:all .6s ease}
+.cs i.a{background:#CBF2AA}
+.cs i.g{width:0;opacity:0;border-width:0;margin-left:-6px;transform:translateY(40px)}
+.bstat{font-size:25px;line-height:1.4;min-height:70px;margin:0}
+.tray{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;min-height:124px;align-content:start}
+.ac{background:var(--mito);color:var(--dark);font-size:21px;font-weight:700;padding:12px 8px;border-radius:12px;text-align:center;animation:acin .45s ease}
+@keyframes acin{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:none}}
+.side{width:470px;flex:none;display:flex;flex-direction:column;gap:18px}
+.side .card{padding:22px 26px;border-left:6px solid var(--c)}
+.side .card h3{font-size:26px}
+.side .card p{font-size:21px}
+
+/* ---------- Integración ---------- */
+.integ{position:relative;margin-top:18px}
+.integ svg{display:block;width:1424px;height:560px;overflow:visible}
+.integ .g-p,.integ .g-c,.integ .g-l{transition:opacity .35s}
+.integ[data-f="p"] .g-c,.integ[data-f="p"] .g-l,
+.integ[data-f="c"] .g-p,.integ[data-f="c"] .g-l,
+.integ[data-f="l"] .g-p,.integ[data-f="l"] .g-c{opacity:.1}
+.iexp{font-size:24px;line-height:1.4;color:#D3DDEA;margin:14px 0 0;max-width:1300px;min-height:68px}
+
+/* ---------- Enfermedades ---------- */
+.dlist{width:430px;flex:none;display:flex;flex-direction:column;gap:12px}
+.dbtn{text-align:left;font:700 24px 'Atkinson Hyperlegible',sans-serif;padding:20px 24px;border-radius:14px;background:var(--panel);border:2px solid var(--line);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.dbtn small{font-size:17px;color:var(--muted);font-weight:400}
+.dbtn.on{border-color:var(--c);box-shadow:0 0 28px -10px var(--c)}
+.dpanel{flex:1;border-left:8px solid var(--c)}
+.dpanel h3{font-size:44px;color:var(--c)}
+.dpanel .who{display:flex;gap:10px;margin:14px 0 24px}
+.dpanel .who span{font-size:19px;font-weight:700;padding:7px 14px;border-radius:8px;background:var(--c);color:var(--dark)}
+.dpanel dl{margin:0;display:grid;grid-template-columns:230px 1fr;gap:18px 24px;font-size:24px;line-height:1.4}
+.dpanel dt{color:var(--muted)}
+.dpanel dd{margin:0}
+
+/* ---------- Cuestionario ---------- */
+.quiz{flex:1;display:flex;flex-direction:column;margin-top:24px}
+.qtop{display:flex;align-items:center;gap:24px;font-size:21px;color:var(--muted)}
+.qbar{flex:1;height:8px;border-radius:4px;background:var(--panel2);overflow:hidden}
+.qbar i{display:block;height:100%;background:var(--mito);width:0;transition:width .4s}
+.qscore{font-weight:700;color:var(--ink)}
+.qkind{font-size:20px;color:var(--mito);margin:28px 0 8px;font-weight:700}
+.qq{font-size:40px;line-height:1.2;max-width:1300px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:28px}
+.opt{text-align:left;font-size:25px;padding:22px 26px;border-radius:16px;background:var(--panel);border:2px solid var(--line);cursor:pointer;display:flex;gap:16px;align-items:center;transition:border-color .2s,background .2s}
+.opt:hover:not(:disabled){border-color:var(--mito)}
+.opt .l{width:40px;height:40px;flex:none;border-radius:10px;background:var(--panel2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px}
+.opt:disabled{cursor:default}
+.opt.ok{border-color:var(--lip);background:rgba(155,229,100,.14)}
+.opt.no{border-color:var(--bad);background:rgba(255,122,122,.14)}
+.opt.dim{opacity:.45}
+.fb{margin-top:22px;display:flex;align-items:center;gap:24px;min-height:84px}
+.fb p{flex:1;font-size:23px;line-height:1.4;margin:0}
+.fb strong{font-size:25px}
+.fb .good{color:var(--lip)}
+.fb .badt{color:var(--bad)}
+.qend{flex:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:center}
+.qend .sc{font:800 150px/1 'Bricolage Grotesque',sans-serif;color:var(--mito);text-shadow:0 0 50px rgba(199,125,255,.4)}
+.qend p{font-size:30px;margin:18px 0 32px;max-width:1000px;line-height:1.4}
+
+/* ---------- Conclusión y cierre ---------- */
+.cols{display:flex;gap:28px;margin-top:44px}
+.cols .card{flex:1;border-top:6px solid var(--c);padding:34px}
+.cols .card h3{font-size:46px;color:var(--c);margin-bottom:14px}
+.cols .card p{font-size:25px}
+.final{font-size:32px;line-height:1.4;margin-top:48px;max-width:1250px}
+.refs{margin:36px 0 0;padding:0;list-style:none;font-size:22px;line-height:1.5;color:var(--muted)}
+.refs li{margin-bottom:8px}
+
+/* ---------- Interfaz React: dock, índice y notas ---------- */
+.slide{transform:translateY(14px) scale(.985);transition:opacity .5s ease,visibility .5s,transform .6s cubic-bezier(.2,.8,.2,1)}
+.slide.on{transform:none}
+#deckui{position:relative;flex:none;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,rgba(10,19,32,.6),#0A1320 40%);border-top:1px solid var(--line)}
+.dock{display:flex;align-items:center;gap:8px}
+.ib{font:700 15px 'Atkinson Hyperlegible',system-ui,sans-serif;color:var(--ink);background:rgba(28,44,72,.55);border:1px solid var(--line);border-radius:12px;min-height:44px;min-width:44px;padding:0 12px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:background .2s,border-color .2s,transform .15s}
+.ib:hover{border-color:var(--muted);background:var(--panel2)}
+.ib:active{transform:scale(.95)}
+.ib[aria-pressed="true"]{background:var(--acc);border-color:transparent;color:var(--dark)}
+.ib.nav{background:var(--acc);border-color:transparent;color:var(--dark);padding:0 16px}
+.ib.nav:disabled{opacity:.35;cursor:default;transform:none}
+.ib svg{width:18px;height:18px;flex:none}
+.track2{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;padding:0 6px}
+.tmeta{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:14px;color:var(--muted);white-space:nowrap}
+.tmeta .tt{overflow:hidden;text-overflow:ellipsis;color:var(--ink);font-weight:700}
+.tmeta .tt span{display:inline-block;animation:tin .35s ease}
+@keyframes tin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.segs{display:flex;gap:3px;height:14px;align-items:center}
+.seg{position:relative;flex:1;height:6px;border:0;padding:0;border-radius:3px;background:var(--line);cursor:pointer;transition:height .2s,background .3s}
+.seg.done{background:color-mix(in srgb,var(--c) 55%,#2C4063)}
+.seg.cur{background:var(--c);height:10px;box-shadow:0 0 12px var(--c)}
+.seg:hover{height:12px}
+.seg .tip{position:absolute;bottom:20px;left:50%;transform:translateX(-50%) translateY(4px);background:#0A1320;border:1px solid var(--line);border-left:4px solid var(--c);color:var(--ink);font-size:13px;font-weight:700;padding:6px 10px;border-radius:8px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s,transform .15s;z-index:9}
+.seg:hover .tip,.seg:focus-visible .tip{opacity:1;transform:translateX(-50%)}
+@media (max-width:700px){.lbl{display:none}.hide-sm{display:none}.dock{gap:6px}.ib{padding:0 10px}}
+/* Overlays */
+.ov{position:absolute;inset:0;z-index:6;background:rgba(6,11,20,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:18px;animation:fade .25s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.modal{width:min(1100px,100%);max-height:100%;display:flex;flex-direction:column;background:linear-gradient(180deg,#15223A,#101B2E);border:1px solid var(--line);border-radius:22px;box-shadow:0 30px 80px rgba(0,0,0,.55);overflow:hidden;animation:pop .35s cubic-bezier(.2,.9,.25,1.15)}
+@keyframes pop{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:none}}
+.mh{display:flex;align-items:center;gap:12px;padding:18px 20px 12px;flex-wrap:wrap}
+.mh h2{font-size:26px;flex:1;min-width:180px}
+.search{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:0 12px;min-height:44px;flex:1 1 220px;max-width:360px}
+.search input{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--ink);font:16px 'Atkinson Hyperlegible',sans-serif}
+.search:focus-within{border-color:var(--mito)}
+.filt{display:flex;gap:8px;flex-wrap:wrap;padding:0 20px 14px}
+.fchip{font:700 14px 'Atkinson Hyperlegible',sans-serif;color:var(--ink);background:transparent;border:1.5px solid var(--c);border-radius:999px;padding:8px 14px;min-height:36px;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.fchip i{width:9px;height:9px;border-radius:50%;background:var(--c)}
+.fchip[aria-pressed="true"]{background:var(--c);color:var(--dark)}
+.fchip[aria-pressed="true"] i{background:var(--dark)}
+.fchip b{font-size:12px;opacity:.7}
+.grid{flex:1 1 auto;min-height:0;grid-auto-rows:max-content;align-content:start;overflow:auto;padding:4px 20px 22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.sc{position:relative;text-align:left;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px 16px;cursor:pointer;display:flex;flex-direction:column;gap:6px;overflow:hidden;opacity:0;animation:cin .35s ease forwards;transition:transform .2s,border-color .2s,box-shadow .2s}
+@keyframes cin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.sc::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:var(--c)}
+.sc:hover{transform:translateY(-3px);border-color:var(--c);box-shadow:0 12px 30px -14px var(--c)}
+.sc.cur{border-color:var(--c);background:var(--panel2);box-shadow:0 0 0 2px var(--c) inset}
+.sc .top{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.sc .num{font:800 30px/1 'Bricolage Grotesque',sans-serif;color:var(--c)}
+.sc .ttl{font:700 18px/1.2 'Bricolage Grotesque',sans-serif}
+.sc .pv{font-size:13.5px;line-height:1.4;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.sc .now{font-size:11px;background:var(--c);color:var(--dark);padding:3px 8px;border-radius:999px;letter-spacing:.04em}
+.empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:40px 0}
+.kbd{font-size:12px;color:var(--muted);padding:0 20px 14px}
+.kbd kbd{font:700 12px ui-monospace,monospace;background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:2px 6px;color:var(--ink)}
+/* Notas */
+.drawer{position:absolute;left:12px;right:12px;bottom:12px;z-index:5;max-height:46%;display:flex;flex-direction:column;background:rgba(12,21,36,.94);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--line);border-top:4px solid var(--c);border-radius:18px;box-shadow:0 -10px 50px rgba(0,0,0,.45);animation:up .35s cubic-bezier(.2,.9,.25,1)}
+@keyframes up{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:none}}
+.dh{display:flex;align-items:center;gap:10px;padding:12px 14px 8px 18px}
+.dh .k{font-size:12px;font-weight:700;color:var(--c);text-transform:uppercase;letter-spacing:.08em}
+.dh h4{margin:0;font:700 17px 'Bricolage Grotesque',sans-serif;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dh .ib{min-height:36px;min-width:36px;padding:0 10px;font-size:14px}
+.db{overflow:auto;padding:0 18px 16px;line-height:1.6}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div id="app">
+<div id="viewport">
+<div id="stage">
+
+<!-- 1 PORTADA -->
+<section class="slide cover" id="s-portada" data-sec="g" data-title="Portada" data-notes="Saludo y presentación del equipo. Idea central: la célula funciona como una fábrica donde cada organelo es una estación especializada. Vamos a seguir tres tipos de moléculas (proteínas, carbohidratos y lípidos) y ver qué organelo las fabrica y cuál las degrada. Los botones de colores llevan directo a cada sección si alguien pregunta algo puntual.">
+  <div class="txt">
+    <p class="tag" style="--c:var(--mito)">Biología celular</p>
+    <h1>La fábrica celular</h1>
+    <p class="sub">Funciones de los organelos en la producción y degradación de lípidos, carbohidratos y proteínas</p>
+    <div class="row">
+      <button class="btn primary" style="--c:var(--ink)" data-next>Empezar</button>
+      <button class="btn" style="--c:var(--prot)" data-go="s-sec-p"><span class="dot"></span>Proteínas</button>
+      <button class="btn" style="--c:var(--carb)" data-go="s-sec-c"><span class="dot"></span>Carbohidratos</button>
+      <button class="btn" style="--c:var(--lip)" data-go="s-sec-l"><span class="dot"></span>Lípidos</button>
+    </div>
+    <p class="who"><b style="color:var(--ink)">Edgar Peña · Kaleth Naranjo · Juan Vega · Robert Guerrero</b></p>
+  </div>
+  <div class="cellbox" data-cell="deco"></div>
+</section>
+
+<!-- 2 ALMUERZO -->
+<section class="slide" id="s-almuerzo" data-sec="g" data-title="Imagina tu almuerzo" data-notes="Pregunta al público qué organelo creen que procesa cada alimento. Deja que respondan unos segundos y luego toca cada tarjeta para voltearla. Al final toca 'Ver la pista': no es un solo organelo, es un trabajo en equipo. Eso conecta con toda la presentación.">
+  <p class="tag" style="--c:var(--mito)">Pregunta de arranque</p>
+  <h2>Imagina tu almuerzo</h2>
+  <p class="lead">Pan, pollo y aguacate llegan a tus células. ¿Quién fabrica, transforma y recicla cada una de sus moléculas? Toca cada alimento.</p>
+  <div class="flips">
+    <button class="flip" style="--c:var(--carb)" aria-pressed="false"><span class="in"><span class="f"><span class="emo">🍞</span><span class="nm">Pan</span><span class="hint">Toca para voltear</span></span><span class="b"><span class="mol">Carbohidratos</span><span class="ds">Almidón que termina convertido en glucosa</span></span></span></button>
+    <button class="flip" style="--c:var(--prot)" aria-pressed="false"><span class="in"><span class="f"><span class="emo">🍗</span><span class="nm">Pollo</span><span class="hint">Toca para voltear</span></span><span class="b"><span class="mol">Proteínas</span><span class="ds">Cadenas de aminoácidos plegadas</span></span></span></button>
+    <button class="flip" style="--c:var(--lip)" aria-pressed="false"><span class="in"><span class="f"><span class="emo">🥑</span><span class="nm">Aguacate</span><span class="hint">Toca para voltear</span></span><span class="b"><span class="mol">Lípidos</span><span class="ds">Grasas y ácidos grasos</span></span></span></button>
+  </div>
+  <div class="pista">
+    <button class="btn" style="--c:var(--mito)" data-toggle="pista1">Ver la pista</button>
+    <p id="pista1" hidden>La respuesta no es un solo organelo… es un equipo entero.</p>
+  </div>
+</section>
+
+<!-- 3 PROTAGONISTAS -->
+<section class="slide p3" id="s-organelos" data-sec="g" data-title="Los organelos protagonistas" data-notes="Pasa el mouse o toca cada organelo en la célula (o usa los botones de colores). Cada uno muestra su función y con qué moléculas trabaja. Aclara que el proteasoma no es un organelo con membrana sino un complejo proteico del citosol y el núcleo. En plantas se suma el cloroplasto, que aparece en carbohidratos.">
+  <p class="tag" style="--c:var(--mito)">El equipo</p>
+  <h2>Los organelos protagonistas</h2>
+  <div class="body">
+    <div class="cellbox" data-cell="int"></div>
+    <div class="info">
+      <div class="opanel" id="opanel">
+        <h3>Toca un organelo</h3>
+        <p class="muted">Pasa el cursor o toca cualquier parte de la célula para ver qué hace y con qué moléculas trabaja.</p>
+      </div>
+      <div class="chips" id="ochips"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 MAPA -->
+<section class="slide" id="s-mapa" data-sec="g" data-title="Mapa rápido" data-notes="Esta tabla es el mapa de toda la exposición. Usa los filtros para resaltar una columna a la vez. Patrón clave: la producción se concentra en ribosomas, RE y Golgi; la degradación en proteasoma, lisosoma, peroxisoma y mitocondria.">
+  <div class="head">
+    <div><p class="tag" style="--c:var(--mito)">Mapa rápido</p><h2>Quién hace qué con cada molécula</h2></div>
+    <div class="row" id="mapf">
+      <button class="btn on" style="--c:var(--ink)" data-f="all">Todo</button>
+      <button class="btn" style="--c:var(--prot)" data-f="p">Proteínas</button>
+      <button class="btn" style="--c:var(--carb)" data-f="c">Carbohidratos</button>
+      <button class="btn" style="--c:var(--lip)" data-f="l">Lípidos</button>
+    </div>
+  </div>
+  <table class="map" id="maptbl" data-f="all">
+    <thead><tr><th style="width:22%">Organelo</th><th style="--c:var(--prot)">Proteínas</th><th style="--c:var(--carb)">Carbohidratos</th><th style="--c:var(--lip)">Lípidos</th></tr></thead>
+    <tbody>
+      <tr><td style="--oc:#F277A8">Citosol y ribosomas</td><td class="p">Síntesis; proteasoma</td><td class="c">Glucólisis; glucógeno</td><td class="l">Síntesis de ácidos grasos</td></tr>
+      <tr><td style="--oc:#4CC9F0">RE rugoso</td><td class="p">Síntesis y plegamiento</td><td class="c">Inicia N-glicosilación</td><td class="l">—</td></tr>
+      <tr><td style="--oc:#56E0D0">RE liso</td><td class="p">—</td><td class="c">Glucosa-6-fosfatasa</td><td class="l">Fosfolípidos y colesterol</td></tr>
+      <tr><td style="--oc:#FFB547">Golgi</td><td class="p">Modifica y clasifica</td><td class="c">O-glicanos, polisacáridos</td><td class="l">Esfingolípidos</td></tr>
+      <tr><td style="--oc:#FF6B6B">Lisosoma</td><td class="p">Degrada (autofagia)</td><td class="c">Degrada glucógeno</td><td class="l">Lipasa ácida</td></tr>
+      <tr><td style="--oc:#9BE564">Peroxisoma</td><td class="p">—</td><td class="c">—</td><td class="l">β-oxidación de cadena muy larga</td></tr>
+      <tr><td style="--oc:#C77DFF">Mitocondria</td><td class="p">Cataboliza aminoácidos</td><td class="c">Krebs; gluconeogénesis</td><td class="l">β-oxidación; esteroides</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 5 DIVISOR PROTEÍNAS -->
+<section class="slide divider" id="s-sec-p" data-sec="p" style="--c:var(--prot)" data-title="Proteínas" data-notes="Primer bloque: proteínas. Vamos a seguir su vida completa: nacimiento en el ribosoma, maduración en el RE y el Golgi, y degradación en el proteasoma o el lisosoma.">
+  <p class="big">Proteínas</p>
+  <p class="lead">Se fabrican en los ribosomas, se pulen en el RE y el Golgi, y se reciclan en el proteasoma y el lisosoma.</p>
+  <ol class="agenda"><li>Dónde nace una proteína</li><li>La ruta secretora</li><li>Tres vías de degradación</li></ol>
+</section>
+
+<!-- 6 ORIGEN -->
+<section class="slide" id="s-origen" data-sec="p" data-title="¿Dónde nace una proteína?" data-notes="Es el mismo ribosoma en ambos casos: lo que decide si se queda libre o se pega al RE es la secuencia de la proteína. Si aparece un péptido señal, la SRP detiene momentáneamente la traducción y lleva el complejo al RE (translocación cotraduccional). Ejemplo: la insulina se fabrica por la ruta del RE porque se secreta. Pide al público que vote antes de tocar cada botón.">
+  <p class="tag" style="--c:var(--prot)">Proteínas, producción</p>
+  <h2>¿Dónde nace una proteína?</h2>
+  <div class="body">
+    <div class="scn">
+      <div class="card"><p>Un ribosoma empieza a traducir un ARNm en el citosol. Los primeros aminoácidos pueden formar un “código postal”: el <b>péptido señal</b>.</p></div>
+      <p style="font-size:26px;font-weight:700;margin:6px 0 0">¿La proteína trae péptido señal?</p>
+      <div class="row" id="origenbtns">
+        <button class="btn" style="--c:var(--prot)" data-path="si">Sí, lo tiene</button>
+        <button class="btn" style="--c:#F277A8" data-path="no">No lo tiene</button>
+      </div>
+    </div>
+    <div class="res" id="origenres">
+      <div class="ph">Elige una respuesta para ver el destino de la proteína</div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 RUTA SECRETORA -->
+<section class="slide" id="s-ruta" data-sec="p" data-title="La ruta secretora" data-notes="Usa 'Reproducir' para que la proteína recorra sola la fábrica, o 'Siguiente' para ir a tu ritmo mientras explicas. Fíjense en el anillo naranja que aparece desde el RE: son los azúcares que se le añaden (glicosilación), y se hace más grueso en el Golgi. La manosa-6-fosfato es la etiqueta de envío al lisosoma.">
+  <p class="tag" style="--c:var(--prot)">Proteínas, producción</p>
+  <h2>La ruta secretora, paso a paso</h2>
+  <div id="ruta">
+    <div class="track">
+      <div class="tline"></div><div class="tfill"></div>
+      <div class="st" style="left:0;--c:#6C8BFF"><b>Núcleo</b><span>ADN → ARNm</span></div>
+      <div class="st" style="left:245px;--c:#4CC9F0"><b>RE rugoso</b><span>síntesis y plegado</span></div>
+      <div class="st" style="left:490px;--c:#56E0D0"><b>Vesícula COPII</b><span>control de calidad</span></div>
+      <div class="st" style="left:734px;--c:#FFB547"><b>Golgi</b><span>modifica y etiqueta</span></div>
+      <div class="st" style="left:979px;--c:#FFD28A"><b>Red trans-Golgi</b><span>clasifica</span></div>
+      <div class="st" style="left:1224px;--c:#E8EEF6"><b>Destino</b><span>fuera, membrana o lisosoma</span></div>
+      <div class="pdot"></div>
+    </div>
+    <div class="stepbar">
+      <div class="card"><h3 class="sh"></h3><p class="sp"></p></div>
+      <div class="ctrl">
+        <button class="btn primary" style="--c:var(--prot)" data-a="play">Reproducir</button>
+        <div class="row"><button class="btn" data-a="prev" aria-label="Paso anterior">Anterior</button><button class="btn" data-a="next" aria-label="Paso siguiente">Siguiente</button></div>
+        <button class="btn" data-a="reset">Reiniciar</button>
+        <p class="stepn"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 DEGRADACIÓN PROTEÍNAS -->
+<section class="slide" id="s-degp" data-sec="p" data-title="Tres vías para degradar proteínas" data-notes="La ubiquitina funciona como una etiqueta de basura. ERAD es el control de calidad del RE. El lisosoma trabaja a pH ácido; si una de sus enzimas escapa al citosol (pH cercano a 7,2) pierde gran parte de su actividad, lo que protege a la célula. Los aminoácidos liberados se reciclan o se usan como combustible.">
+  <p class="tag" style="--c:var(--prot)">Proteínas, degradación</p>
+  <h2>Tres vías para degradar proteínas</h2>
+  <div class="row" style="margin-top:28px" id="degtabs">
+    <button class="btn on" style="--c:#F277A8" data-tab="0">Proteasoma</button>
+    <button class="btn" style="--c:var(--prot)" data-tab="1">ERAD</button>
+    <button class="btn" style="--c:#FF6B6B" data-tab="2">Lisosoma</button>
+  </div>
+  <div id="degpanels">
+    <div class="card tabpanel tp on" style="--c:#F277A8">
+      <h3>Proteasoma</h3><p class="sub">En el citosol y el núcleo</p>
+      <p>Las proteínas dañadas o de vida corta se marcan con una cadena de ubiquitina. El proteasoma 26S las reconoce, las despliega y las corta en péptidos usando ATP.</p>
+      <div class="flow"><span class="nd">Proteína dañada</span><span class="ar">→</span><span class="nd">+ ubiquitina</span><span class="ar">→</span><span class="nd">Proteasoma 26S (ATP)</span><span class="ar">→</span><span class="nd">Péptidos</span><span class="ar">→</span><span class="nd">Aminoácidos</span></div>
+    </div>
+    <div class="card tabpanel tp" style="--c:var(--prot)">
+      <h3>ERAD</h3><p class="sub">Del RE al proteasoma</p>
+      <p>Las proteínas que no logran plegarse en el RE se retrotranslocan al citosol, se ubiquitinan y el proteasoma las destruye. Es el control de calidad del retículo.</p>
+      <div class="flow"><span class="nd">Mal plegada en el RE</span><span class="ar">→</span><span class="nd">Sale al citosol</span><span class="ar">→</span><span class="nd">+ ubiquitina</span><span class="ar">→</span><span class="nd">Proteasoma</span></div>
+    </div>
+    <div class="card tabpanel tp" style="--c:#FF6B6B">
+      <h3>Lisosoma</h3><p class="sub">Hidrolasas ácidas, pH ≈ 4,5–5</p>
+      <p>Digiere proteínas que llegan por endocitosis desde fuera de la célula o por autofagia desde dentro, incluso organelos completos.</p>
+      <div class="flow"><span class="nd">Endocitosis o autofagia</span><span class="ar">→</span><span class="nd">Lisosoma</span><span class="ar">→</span><span class="nd">Hidrolasas ácidas</span><span class="ar">→</span><span class="nd">Aminoácidos</span></div>
+    </div>
+  </div>
+  <p style="font-size:25px;margin-top:26px"><b>Resultado:</b> aminoácidos libres que se reutilizan para nuevas proteínas o se oxidan en la mitocondria.</p>
+</section>
+
+<!-- 9 DIVISOR CARBOHIDRATOS -->
+<section class="slide divider" id="s-sec-c" data-sec="c" style="--c:var(--carb)" data-title="Carbohidratos" data-notes="Segundo bloque: carbohidratos. Tienen dos papeles: energía (glucosa, glucógeno) e identidad o señalización (azúcares unidos a proteínas y lípidos en la superficie celular).">
+  <p class="big">Carbohidratos</p>
+  <p class="lead">Combustible rápido y “etiquetas” que decoran proteínas y lípidos.</p>
+  <ol class="agenda"><li>Quién los fabrica</li><li>El viaje de la glucosa</li></ol>
+</section>
+
+<!-- 10 PRODUCCIÓN CARBOHIDRATOS -->
+<section class="slide" id="s-prodc" data-sec="c" data-title="¿Quién fabrica los carbohidratos?" data-notes="Pide al público que adivine el proceso de cada organelo antes de tocar la tarjeta. La gluconeogénesis recorre tres compartimentos: la piruvato carboxilasa está en la mitocondria y la glucosa-6-fosfatasa en el lumen del RE (hígado y riñón); por eso el músculo no libera glucosa a la sangre. El cloroplasto solo aplica en células vegetales.">
+  <div class="head">
+    <div><p class="tag" style="--c:var(--carb)">Carbohidratos, producción</p><h2>¿Quién fabrica los carbohidratos?</h2></div>
+    <button class="btn" style="--c:var(--carb)" data-revealall="#prodc-grid">Revelar todas</button>
+  </div>
+  <div class="rgrid" id="prodc-grid" style="grid-template-columns:1fr 1fr">
+    <button class="rcard" style="--c:#F277A8"><span class="where">Citosol</span><span class="q">¿Qué proceso ocurre aquí? Toca para revelar.</span><span class="what">Glucogénesis</span><span class="ex">En hígado y músculo, la glucógeno sintasa une glucosas para guardarlas como glucógeno.</span></button>
+    <button class="rcard" style="--c:var(--mito)"><span class="where">Mitocondria + citosol + RE</span><span class="q">¿Qué proceso ocurre aquí? Toca para revelar.</span><span class="what">Gluconeogénesis</span><span class="ex">El hígado fabrica glucosa nueva: empieza en la mitocondria (piruvato → oxalacetato) y termina en el RE con la glucosa-6-fosfatasa.</span></button>
+    <button class="rcard" style="--c:var(--carb)"><span class="where">RE y Golgi</span><span class="q">¿Qué proceso ocurre aquí? Toca para revelar.</span><span class="what">Glicosilación</span><span class="ex">El RE añade oligosacáridos a las proteínas; el Golgi los remodela y fabrica glicosaminoglicanos para los proteoglicanos.</span></button>
+    <button class="rcard" style="--c:#6FCF5B"><span class="where">Cloroplasto (solo plantas)</span><span class="q">¿Qué proceso ocurre aquí? Toca para revelar.</span><span class="what">Fotosíntesis</span><span class="ex">El ciclo de Calvin fija CO₂ y produce azúcares que se almacenan como almidón.</span></button>
+  </div>
+</section>
+
+<!-- 11 GLUCOSA -->
+<section class="slide" id="s-glucosa" data-sec="c" data-title="El viaje de la glucosa" data-notes="Avanza paso a paso y señala los contadores. Glucólisis: ganancia neta de 2 ATP y 2 NADH. La piruvato deshidrogenasa convierte cada piruvato en acetil-CoA y libera CO₂. Cada acetil-CoA da una vuelta al ciclo de Krebs (la glucosa da dos). La cadena respiratoria produce la mayoría del ATP: alrededor de 30 a 32 por glucosa. El botón 'Otras vías' muestra la glucogenólisis y el papel del lisosoma (enfermedad de Pompe).">
+  <div class="head">
+    <div><p class="tag" style="--c:var(--carb)">Carbohidratos, degradación</p><h2>La glucosa, del citosol a la mitocondria</h2></div>
+    <button class="btn" style="--c:var(--carb)" data-toggle="gpop">Otras vías del glucógeno</button>
+  </div>
+  <div id="gluc">
+    <div class="gtrack">
+      <div class="reg cy"><span class="lb" style="left:24px;color:var(--muted)">Citosol</span></div>
+      <div class="reg mi"><span class="lb" style="left:70px;color:#D9B3FF">Mitocondria</span></div>
+      <div class="ga" style="left:240px;width:64px"></div>
+      <div class="ga" style="left:520px;width:114px"></div>
+      <div class="ga" style="left:850px;width:44px"></div>
+      <div class="ga" style="left:1100px;width:44px"></div>
+      <div class="gn" style="left:40px;width:200px;--c:var(--carb)"><b>Glucosa</b><span>6 carbonos</span></div>
+      <div class="gn" style="left:310px;width:210px;--c:var(--carb)"><b>2 Piruvato</b><span>3 carbonos c/u</span></div>
+      <div class="gn" style="left:640px;width:210px;--c:var(--mito)"><b>2 Acetil-CoA</b><span>+ CO₂</span></div>
+      <div class="gn kr" style="left:900px;width:200px;--c:var(--mito)"><b>Ciclo de Krebs</b><span>2 vueltas</span></div>
+      <div class="gn" style="left:1150px;width:250px;--c:#E8EEF6"><b>Cadena respiratoria</b><span>membrana interna</span></div>
+      <div class="gdot"></div>
+    </div>
+    <div class="stepbar" style="margin-top:22px">
+      <div class="card" style="flex:1"><h3 class="sh"></h3><p class="sp"></p></div>
+      <div class="counters">
+        <div class="ct" style="--c:var(--ink)"><b data-k="atp">0</b><span>ATP</span></div>
+        <div class="ct" style="--c:var(--prot)"><b data-k="nadh">0</b><span>NADH</span></div>
+        <div class="ct" style="--c:var(--lip)"><b data-k="fadh">0</b><span>FADH₂</span></div>
+        <div class="ct" style="--c:var(--muted)"><b data-k="co2">0</b><span>CO₂</span></div>
+      </div>
+      <div class="ctrl" style="width:260px">
+        <button class="btn primary" style="--c:var(--carb)" data-a="play">Reproducir</button>
+        <div class="row"><button class="btn" data-a="prev">Anterior</button><button class="btn" data-a="next">Siguiente</button></div>
+        <button class="btn" data-a="reset">Reiniciar</button>
+      </div>
+    </div>
+  </div>
+  <div class="pop" id="gpop" hidden>
+    <div class="card" style="border-left:6px solid #F277A8"><h3>Glucogenólisis, en el citosol</h3><p>La glucógeno fosforilasa libera glucosa-1-fosfato cuando la célula necesita energía.</p></div>
+    <div class="card" style="border-left:6px solid #FF6B6B"><h3>Lisosoma</h3><p>También degrada glucógeno con la α-glucosidasa ácida. Si falla, se acumula: enfermedad de Pompe.</p></div>
+  </div>
+</section>
+
+<!-- 12 DIVISOR LÍPIDOS -->
+<section class="slide divider" id="s-sec-l" data-sec="l" style="--c:var(--lip)" data-title="Lípidos" data-notes="Tercer bloque: lípidos. Tres funciones: formar membranas (fosfolípidos, colesterol), almacenar energía (triglicéridos) y señalizar (hormonas esteroides).">
+  <p class="big">Lípidos</p>
+  <p class="lead">Membranas, reservas de energía y hormonas: casi todo pasa por el RE liso.</p>
+  <ol class="agenda"><li>Las fábricas de lípidos</li><li>Cómo se desarman</li></ol>
+</section>
+
+<!-- 13 PRODUCCIÓN LÍPIDOS -->
+<section class="slide" id="s-prodl" data-sec="l" data-title="Las fábricas de lípidos" data-notes="El RE liso es la gran fábrica de lípidos; es muy abundante en el hígado y en células que producen hormonas esteroides (suprarrenal, gónadas). Los fosfolípidos nuevos se insertan en una sola capa de la membrana del RE y las escramblasas los reparten. La HMG-CoA reductasa es la enzima que inhiben las estatinas.">
+  <div class="head">
+    <div><p class="tag" style="--c:var(--lip)">Lípidos, producción</p><h2>Las fábricas de lípidos</h2></div>
+    <button class="btn" style="--c:var(--lip)" data-revealall="#prodl-grid">Revelar todas</button>
+  </div>
+  <div class="rgrid" id="prodl-grid" style="grid-template-columns:1fr 1fr 1fr">
+    <button class="rcard" style="--c:#F277A8"><span class="where">Citosol</span><span class="q">¿Qué fabrica? Toca para revelar.</span><span class="what">Ácidos grasos</span><span class="ex">La acetil-CoA carboxilasa y la ácido graso sintasa arman cadenas de 2 en 2 carbonos. El acetil-CoA sale de la mitocondria como citrato.</span></button>
+    <button class="rcard" style="--c:#56E0D0"><span class="where">RE liso</span><span class="q">¿Qué fabrica? Toca para revelar.</span><span class="what">Fosfolípidos y colesterol</span><span class="ex">Se ensamblan en la cara citosólica de la membrana; la HMG-CoA reductasa controla la síntesis de colesterol.</span></button>
+    <button class="rcard" style="--c:#56E0D0"><span class="where">RE liso</span><span class="q">¿Qué fabrica? Toca para revelar.</span><span class="what">Triglicéridos</span><span class="ex">Se acumulan entre las capas de la membrana y brotan como gotas lipídicas de reserva.</span></button>
+    <button class="rcard" style="--c:var(--mito)"><span class="where">Mitocondria + RE liso</span><span class="q">¿Qué fabrica? Toca para revelar.</span><span class="what">Hormonas esteroides</span><span class="ex">En la mitocondria el colesterol pasa a pregnenolona; el RE liso completa cortisol, estrógenos o testosterona.</span></button>
+    <button class="rcard" style="--c:var(--carb)"><span class="where">Aparato de Golgi</span><span class="q">¿Qué fabrica? Toca para revelar.</span><span class="what">Esfingolípidos</span><span class="ex">Convierte la ceramida que llega del RE en esfingomielina y glucolípidos de membrana.</span></button>
+    <button class="rcard" style="--c:var(--lip)"><span class="where">Peroxisoma</span><span class="q">¿Qué fabrica? Toca para revelar.</span><span class="what">Plasmalógenos</span><span class="ex">Inicia la síntesis de estos fosfolípidos, abundantes en la mielina y el corazón.</span></button>
+  </div>
+</section>
+
+<!-- 14 BETA-OXIDACIÓN -->
+<section class="slide" id="s-beta" data-sec="l" data-title="Cómo se desarman los lípidos" data-notes="Haz la β-oxidación en vivo con 'Siguiente vuelta': cada vuelta corta 2 carbonos del extremo unido a la coenzima A. El ácido palmítico (16 C) necesita 7 vueltas y produce 8 acetil-CoA, 7 NADH y 7 FADH₂. En la última vuelta el fragmento de 4 carbonos se parte en 2 acetil-CoA. La carnitina es el boleto de entrada a la mitocondria.">
+  <p class="tag" style="--c:var(--lip)">Lípidos, degradación</p>
+  <h2>Cómo se desarman los lípidos</h2>
+  <div class="body" id="beta">
+    <div class="bpanel card" style="border-left:6px solid var(--mito)">
+      <h3 style="font-size:30px">β-oxidación del ácido palmítico (16 carbonos), en la mitocondria</h3>
+      <div class="chain"><span class="coa">CoA</span><div class="cs"></div></div>
+      <p class="bstat"></p>
+      <div class="counters">
+        <div class="ct" style="--c:var(--ink)"><b data-k="v">0/7</b><span>Vueltas</span></div>
+        <div class="ct" style="--c:var(--mito)"><b data-k="ac">0</b><span>Acetil-CoA</span></div>
+        <div class="ct" style="--c:var(--prot)"><b data-k="n">0</b><span>NADH</span></div>
+        <div class="ct" style="--c:var(--lip)"><b data-k="f">0</b><span>FADH₂</span></div>
+      </div>
+      <div class="tray"></div>
+    </div>
+    <div class="side">
+      <div class="row">
+        <button class="btn primary" style="--c:var(--lip)" data-a="next">Siguiente vuelta</button>
+        <button class="btn" data-a="play">Automático</button>
+        <button class="btn" data-a="reset">Reiniciar</button>
+      </div>
+      <div class="card" style="--c:var(--lip)"><h3>Peroxisoma</h3><p>Acorta ácidos grasos de cadena muy larga y ramificados; produce H₂O₂, que la catalasa elimina.</p></div>
+      <div class="card" style="--c:#FF6B6B"><h3>Lisosoma y gotas lipídicas</h3><p>La lipasa ácida lisosomal y las lipasas del citosol liberan ácidos grasos de las reservas.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 15 INTEGRACIÓN -->
+<section class="slide" id="s-integ" data-sec="g" data-title="Todo converge en la mitocondria" data-notes="La idea que une toda la exposición. Usa los botones para mostrar la ruta de cada molécula. La línea punteada recuerda que algunos aminoácidos entran como intermediarios del ciclo (por ejemplo α-cetoglutarato u oxalacetato). El grupo amino se elimina como urea, en un ciclo repartido entre la mitocondria y el citosol del hígado. El camino también funciona al revés: el citrato sale de la mitocondria para fabricar ácidos grasos.">
+  <div class="head">
+    <div><p class="tag" style="--c:var(--mito)">Integración</p><h2>Todo converge en la mitocondria</h2></div>
+    <div class="row" id="integf">
+      <button class="btn on" style="--c:var(--mito)" data-f="all">Todas</button>
+      <button class="btn" style="--c:var(--prot)" data-f="p">Proteínas</button>
+      <button class="btn" style="--c:var(--carb)" data-f="c">Carbohidratos</button>
+      <button class="btn" style="--c:var(--lip)" data-f="l">Lípidos</button>
+    </div>
+  </div>
+  <div class="integ" id="integ" data-f="all">
+    <svg viewBox="0 0 1424 560" role="img" aria-label="Proteínas, carbohidratos y lípidos convergen en el acetil-CoA, el ciclo de Krebs y la producción de ATP">
+      <defs>
+        <filter id="igl" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <path id="pP" class="g-p" d="M340 75 Q560 75 612 206" fill="none" stroke="#4CC9F0" stroke-opacity=".5" stroke-width="5"/>
+      <path id="pC" class="g-c" d="M340 280 L590 280" fill="none" stroke="#FFB547" stroke-opacity=".5" stroke-width="5"/>
+      <path id="pL" class="g-l" d="M340 485 Q560 485 612 354" fill="none" stroke="#9BE564" stroke-opacity=".5" stroke-width="5"/>
+      <path id="pH" d="M810 280 L1200 280" fill="none" stroke="#C77DFF" stroke-opacity=".5" stroke-width="5"/>
+      <path id="pD" class="g-p" d="M340 45 C640 -20 930 50 1010 186" fill="none" stroke="#4CC9F0" stroke-width="3" stroke-dasharray="10 8"/>
+      <text class="g-p" x="600" y="84" font-size="20" font-style="italic" fill="#4CC9F0" font-family="Atkinson Hyperlegible, sans-serif">algunos aminoácidos entran directo al ciclo</text>
+      <g class="g-p"><rect x="0" y="20" width="340" height="110" rx="18" fill="#4CC9F0"/><text x="28" y="68" font-size="32" font-weight="700" fill="#0D1726" font-family="Bricolage Grotesque, sans-serif">Proteínas</text><text x="28" y="104" font-size="22" fill="#0D1726" font-family="Atkinson Hyperlegible, sans-serif">→ aminoácidos</text></g>
+      <g class="g-c"><rect x="0" y="225" width="340" height="110" rx="18" fill="#FFB547"/><text x="28" y="273" font-size="32" font-weight="700" fill="#0D1726" font-family="Bricolage Grotesque, sans-serif">Carbohidratos</text><text x="28" y="309" font-size="22" fill="#0D1726" font-family="Atkinson Hyperlegible, sans-serif">→ glucosa → piruvato</text></g>
+      <g class="g-l"><rect x="0" y="430" width="340" height="110" rx="18" fill="#9BE564"/><text x="28" y="478" font-size="32" font-weight="700" fill="#0D1726" font-family="Bricolage Grotesque, sans-serif">Lípidos</text><text x="28" y="514" font-size="22" fill="#0D1726" font-family="Atkinson Hyperlegible, sans-serif">→ ácidos grasos</text></g>
+      <circle cx="700" cy="280" r="110" fill="#C77DFF" filter="url(#igl)"/>
+      <text x="700" y="290" text-anchor="middle" font-size="32" font-weight="700" fill="#0D1726" font-family="Bricolage Grotesque, sans-serif">Acetil-CoA</text>
+      <circle cx="1030" cy="280" r="95" fill="#15223A" stroke="#C77DFF" stroke-width="7" stroke-dasharray="16 10"><animateTransform attributeName="transform" type="rotate" from="0 1030 280" to="360 1030 280" dur="10s" repeatCount="indefinite"/></circle>
+      <text x="1030" y="272" text-anchor="middle" font-size="26" font-weight="700" fill="#E8EEF6" font-family="Bricolage Grotesque, sans-serif">Ciclo de</text>
+      <text x="1030" y="304" text-anchor="middle" font-size="26" font-weight="700" fill="#E8EEF6" font-family="Bricolage Grotesque, sans-serif">Krebs</text>
+      <rect x="1200" y="215" width="224" height="130" rx="18" fill="#E8EEF6"/>
+      <text x="1312" y="280" text-anchor="middle" font-size="46" font-weight="800" fill="#0D1726" font-family="Bricolage Grotesque, sans-serif">ATP</text>
+      <text x="1312" y="316" text-anchor="middle" font-size="19" fill="#0D1726" font-family="Atkinson Hyperlegible, sans-serif">cadena respiratoria</text>
+      <circle class="g-p" r="10" fill="#4CC9F0"><animateMotion dur="3s" repeatCount="indefinite"><mpath href="#pP"/></animateMotion></circle>
+      <circle class="g-p" r="10" fill="#4CC9F0"><animateMotion dur="3s" begin="1.5s" repeatCount="indefinite"><mpath href="#pP"/></animateMotion></circle>
+      <circle class="g-p" r="8" fill="#4CC9F0"><animateMotion dur="4s" repeatCount="indefinite"><mpath href="#pD"/></animateMotion></circle>
+      <circle class="g-c" r="10" fill="#FFB547"><animateMotion dur="2.6s" repeatCount="indefinite"><mpath href="#pC"/></animateMotion></circle>
+      <circle class="g-c" r="10" fill="#FFB547"><animateMotion dur="2.6s" begin="1.3s" repeatCount="indefinite"><mpath href="#pC"/></animateMotion></circle>
+      <circle class="g-l" r="10" fill="#9BE564"><animateMotion dur="3s" begin=".7s" repeatCount="indefinite"><mpath href="#pL"/></animateMotion></circle>
+      <circle class="g-l" r="10" fill="#9BE564"><animateMotion dur="3s" begin="2.2s" repeatCount="indefinite"><mpath href="#pL"/></animateMotion></circle>
+      <circle r="11" fill="#C77DFF"><animateMotion dur="2.4s" repeatCount="indefinite"><mpath href="#pH"/></animateMotion></circle>
+      <circle r="11" fill="#C77DFF"><animateMotion dur="2.4s" begin="1.2s" repeatCount="indefinite"><mpath href="#pH"/></animateMotion></circle>
+    </svg>
+    <p class="iexp" id="iexp"></p>
+  </div>
+</section>
+
+<!-- 16 ENFERMEDADES -->
+<section class="slide" id="s-enf" data-sec="g" data-title="Cuando un organelo falla" data-notes="Esta diapositiva muestra que lo visto no es solo teoría. Toca cada enfermedad. Tay-Sachs y Pompe son enfermedades de depósito lisosomal (un lípido y un carbohidrato). En la enfermedad de células I el Golgi no pone la etiqueta manosa-6-fosfato. En la fibrosis quística la CFTR mal plegada es destruida por el control de calidad del RE aunque podría funcionar parcialmente. Zellweger es un trastorno de la formación de peroxisomas.">
+  <p class="tag" style="--c:#FF6B6B">Relevancia clínica</p>
+  <h2>Cuando un organelo falla</h2>
+  <div class="body">
+    <div class="dlist" id="dlist"></div>
+    <div class="card dpanel" id="dpanel"></div>
+  </div>
+</section>
+
+<!-- 17 CUESTIONARIO -->
+<section class="slide" id="s-quiz" data-sec="g" data-title="Cuestionario" data-notes="Momento interactivo. Lee cada pregunta en voz alta, deja que el público vote (manos arriba o por grupos) y luego toca la respuesta que eligió la mayoría. La página marca si es correcta y explica por qué. Al final aparece el puntaje del grupo. Idea: divide el salón en dos equipos y alterna las preguntas.">
+  <div class="head">
+    <div><p class="tag" style="--c:var(--mito)">Reto final</p><h2>¿Cuánto aprendiste?</h2></div>
+  </div>
+  <div class="quiz" id="quiz"></div>
+</section>
+
+<!-- 18 CONCLUSIÓN -->
+<section class="slide" id="s-concl" data-sec="g" data-title="Conclusión" data-notes="Cierra con la idea de compartimentación: gracias a que cada proceso ocurre en un organelo distinto, la célula puede sintetizar ácidos grasos en el citosol mientras los degrada en la mitocondria, o fabricar proteínas en el RE mientras las destruye en el lisosoma, sin que las rutas choquen.">
+  <p class="tag" style="--c:var(--mito)">Conclusión</p>
+  <h2>Una fábrica, muchas estaciones</h2>
+  <div class="cols">
+    <div class="card" style="--c:var(--prot)"><h3>Producir</h3><p>Ribosomas, RE y Golgi arman proteínas, azúcares y lípidos; el citosol aporta rutas clave.</p></div>
+    <div class="card" style="--c:#FF6B6B"><h3>Degradar</h3><p>Proteasoma, lisosoma, peroxisoma y mitocondria desarman y reciclan.</p></div>
+    <div class="card" style="--c:var(--mito)"><h3>Integrar</h3><p>El acetil-CoA mitocondrial une los tres metabolismos y produce ATP.</p></div>
+  </div>
+  <p class="final">La compartimentación permite que la célula fabrique y destruya al mismo tiempo sin mezclar los procesos.</p>
+</section>
+
+<!-- 19 CIERRE -->
+<section class="slide" id="s-cierre" data-sec="g" data-title="¿Preguntas?" data-notes="Abre espacio para preguntas. Si nadie pregunta, lanza una: ¿qué pasaría con una célula del hígado si sus peroxisomas no funcionaran? Respuesta esperada: se acumularían ácidos grasos de cadena muy larga, como en el síndrome de Zellweger.">
+  <h1 style="font-size:130px;font-weight:800;letter-spacing:-.035em;line-height:1">¿Preguntas?</h1>
+  <p class="lead" style="color:var(--ink);font-size:30px">Gracias por su atención.<br><span style="font-size:24px;color:var(--muted)">Edgar Peña · Kaleth Naranjo · Juan Vega · Robert Guerrero</span></p>
+  <div class="row" style="margin-top:32px">
+    <button class="btn" style="--c:var(--mito)" data-go="s-quiz">Repetir el cuestionario</button>
+    <button class="btn" data-go="s-portada">Volver al inicio</button>
+  </div>
+  <ul class="refs">
+    <li>Alberts, B. et al. <i>Biología molecular de la célula</i>. Omega.</li>
+    <li>Lodish, H. et al. <i>Biología celular y molecular</i>. Editorial Médica Panamericana.</li>
+    <li>Nelson, D. L. y Cox, M. M. <i>Lehninger: Principios de bioquímica</i>. Omega.</li>
+  </ul>
+</section>
+
+</div>
+</div>
+<div id="deckui"></div>
+</div>
+
+<script>
+(function(){
+"use strict";
+var $=function(s,r){return (r||document).querySelector(s)};
+var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+var stoppers=[];
+
+/* ================= Escalado del escenario ================= */
+var stage=$('#stage'),vp=$('#viewport');
+function fit(){var s=Math.min(vp.clientWidth/1600,vp.clientHeight/900);stage.style.transform='translate(-50%,-50%) scale('+s+')'}
+window.addEventListener('resize',fit);
+if(window.ResizeObserver){new ResizeObserver(fit).observe(vp)}
+fit();
+
+/* ================= Navegación ================= */
+var slides=$$('.slide'),cur=0;
+var secCol={g:'#C77DFF',p:'#4CC9F0',c:'#FFB547',l:'#9BE564'};
+function idxOf(id){for(var i=0;i<slides.length;i++){if(slides[i].id===id)return i}return 0}
+function show(i){
+  i=Math.max(0,Math.min(slides.length-1,i));
+  stoppers.forEach(function(f){f()});
+  slides.forEach(function(s,j){var on=j===i;s.classList.toggle('on',on);s.setAttribute('aria-hidden',on?'false':'true');s.inert=!on});
+  cur=i;
+  window.dispatchEvent(new CustomEvent('deck:change',{detail:{i:i}}));
+}
+document.addEventListener('click',function(e){
+  var g=e.target.closest('[data-go]');if(g){show(idxOf(g.dataset.go));return}
+  if(e.target.closest('[data-next]')){show(cur+1)}
+});
+/* Pantalla completa */
+var fsOK=!!(document.fullscreenEnabled||document.webkitFullscreenEnabled);
+function fs(){
+  try{
+    if(document.fullscreenElement||document.webkitFullscreenElement){(document.exitFullscreen||document.webkitExitFullscreen).call(document)}
+    else{var el=document.documentElement;var p=(el.requestFullscreen||el.webkitRequestFullscreen).call(el);if(p&&p.catch)p.catch(function(){})}
+  }catch(err){}
+}
+/* API para la interfaz React */
+window.deck={
+  slides:slides.map(function(s){return {id:s.id,sec:s.dataset.sec,title:s.dataset.title,notes:s.dataset.notes||''}}),
+  secCol:secCol,fsOK:fsOK,fs:fs,go:show,
+  cur:function(){return cur}
+};
+/* Teclado (las teclas N, I, F y Escape las maneja la interfaz React) */
+document.addEventListener('keydown',function(e){
+  if(e.altKey||e.ctrlKey||e.metaKey)return;
+  if(window.deckModal)return;
+  if(e.target.closest&&e.target.closest('input,textarea'))return;
+  var k=e.key;
+  if(k==='ArrowRight'||k==='PageDown'){e.preventDefault();show(cur+1)}
+  else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();show(cur-1)}
+  else if(k===' '&&!e.target.closest('button')){e.preventDefault();show(cur+1)}
+  else if(k==='Home'){show(0)}
+  else if(k==='End'){show(slides.length-1)}
+});
+/* Deslizar en pantallas táctiles */
+var tx=null,ty=null;
+vp.addEventListener('touchstart',function(e){tx=e.touches[0].clientX;ty=e.touches[0].clientY},{passive:true});
+vp.addEventListener('touchend',function(e){if(tx===null)return;var dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;if(Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy)*1.5){show(cur+(dx<0?1:-1))}tx=null},{passive:true});
+
+/* ================= Utilidades genéricas ================= */
+document.addEventListener('click',function(e){
+  var t=e.target.closest('[data-toggle]');
+  if(t){var el=document.getElementById(t.dataset.toggle);if(el){var h=el.hidden;el.hidden=!h;el.classList.toggle('on',h)}}
+  var f=e.target.closest('.flip');if(f){f.classList.toggle('open');f.setAttribute('aria-pressed',f.classList.contains('open'))}
+  var r=e.target.closest('.rcard');if(r){r.classList.toggle('open')}
+  var ra=e.target.closest('[data-revealall]');if(ra){$$('.rcard',$(ra.dataset.revealall)).forEach(function(c){c.classList.add('open')})}
+});
+
+/* ================= Célula ================= */
+var ORG={
+  nuc:{n:'Núcleo',c:'#6C8BFF',f:'Guarda el ADN con los genes de todas las enzimas. Aquí se fabrican los ARNm que después se traducen en el citosol.',m:[]},
+  cyt:{n:'Citosol y ribosomas',c:'#F277A8',f:'Los ribosomas traducen el ARNm en proteínas. En el citosol ocurren la glucólisis, la síntesis de glucógeno y de ácidos grasos, y trabaja el proteasoma.',m:['p','c','l']},
+  rer:{n:'RE rugoso',c:'#4CC9F0',f:'Sus ribosomas fabrican proteínas de secreción y de membrana. Las pliega con chaperonas, forma puentes disulfuro e inicia su glicosilación.',m:['p','c']},
+  rel:{n:'RE liso',c:'#56E0D0',f:'Fabrica fosfolípidos, colesterol, triglicéridos y hormonas esteroides. En el hígado tiene la glucosa-6-fosfatasa y enzimas que detoxifican.',m:['l','c']},
+  gol:{n:'Aparato de Golgi',c:'#FFB547',f:'Modifica, clasifica y envía proteínas. Remodela sus azúcares, fabrica polisacáridos y esfingolípidos, y marca enzimas con manosa-6-fosfato.',m:['p','c','l']},
+  lis:{n:'Lisosomas',c:'#FF6B6B',f:'Con hidrolasas ácidas (pH ≈ 4,5–5) digieren proteínas, glucógeno, lípidos y hasta organelos viejos por autofagia.',m:['p','c','l']},
+  per:{n:'Peroxisomas',c:'#9BE564',f:'Acortan ácidos grasos de cadena muy larga, producen H₂O₂ que la catalasa destruye e inician la síntesis de plasmalógenos.',m:['l']},
+  mit:{n:'Mitocondrias',c:'#C77DFF',f:'Oxidan piruvato, ácidos grasos y aminoácidos en el ciclo de Krebs y producen la mayor parte del ATP. También participan en la gluconeogénesis y en la síntesis de esteroides.',m:['p','c','l']}
+};
+var MOL={p:['Proteínas','#4CC9F0'],c:['Carbohidratos','#FFB547'],l:['Lípidos','#9BE564']};
+function cellSVG(k){
+  var arc=function(d){return '<path d="'+d+'" fill="none" stroke="#4CC9F0" stroke-width="10" stroke-linecap="round"/>'};
+  var dot=function(x,y,r,c){return '<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="'+c+'"/>'};
+  var gol='';[['M440 350 Q500 322 560 350'],['M448 378 Q500 353 552 378'],['M458 406 Q500 384 542 406'],['M470 432 Q500 415 530 432']].forEach(function(p){gol+='<path d="'+p[0]+'" fill="none" stroke="#FFB547" stroke-width="11" stroke-linecap="round"/>'});
+  var mito=function(t,rx,ry,hx,hy,s){return '<g transform="'+t+'"><ellipse class="hit" rx="'+hx+'" ry="'+hy+'"/><ellipse rx="'+rx+'" ry="'+ry+'" fill="#C77DFF"/><path d="M-'+(rx-18)+' 0 '+s+'" fill="none" stroke="#F1DDFF" stroke-width="4"/></g>'};
+  return '<svg viewBox="0 0 700 620" class="cell" role="img" aria-label="Esquema de una célula animal con sus organelos">'+
+  '<defs><filter id="gl'+k+'" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'+
+  '<radialGradient id="cy'+k+'" cx="45%" cy="42%" r="62%"><stop offset="0" stop-color="#1D3252"/><stop offset="1" stop-color="#101C30"/></radialGradient></defs>'+
+  '<g class="org" data-o="cyt"><ellipse cx="350" cy="310" rx="330" ry="290" fill="url(#cy'+k+')" stroke="#F277A8" stroke-opacity=".55" stroke-width="4"/></g>'+
+  '<g filter="url(#gl'+k+')">'+
+  '<g class="org" data-o="rel"><rect class="hit" x="120" y="425" width="190" height="100"/><path d="M140 460 q17 -24 34 0 t34 0 t34 0 t34 0" fill="none" stroke="#56E0D0" stroke-width="10" stroke-linecap="round"/><path d="M160 505 q17 -24 34 0 t34 0 t34 0" fill="none" stroke="#56E0D0" stroke-width="10" stroke-linecap="round"/></g>'+
+  '<g class="org" data-o="gol"><rect class="hit" x="425" y="305" width="190" height="160"/>'+gol+dot(585,340,10,'#FFB547')+dot(590,395,8,'#FFB547')+dot(565,448,9,'#FFB547')+'</g>'+
+  '<g class="org" data-o="lis"><circle class="hit" cx="575" cy="215" r="40"/><circle class="hit" cx="430" cy="520" r="36"/>'+dot(575,215,26,'#FF6B6B')+dot(430,520,22,'#FF6B6B')+'</g>'+
+  '<g class="org" data-o="per"><circle class="hit" cx="330" cy="470" r="32"/><circle class="hit" cx="520" cy="500" r="28"/>'+dot(330,470,20,'#9BE564')+dot(330,470,8,'#DDF8C8')+dot(520,500,16,'#9BE564')+dot(520,500,6,'#DDF8C8')+'</g>'+
+  '<g class="org" data-o="mit">'+mito('translate(470 140) rotate(-20)',62,28,80,44,'l11 -16 l11 32 l11 -32 l11 32 l11 -32 l11 32 l11 -32 l11 16')+mito('translate(310 562) rotate(8)',58,26,76,40,'l10 -14 l10 28 l10 -28 l10 28 l10 -28 l10 28 l10 -28 l10 14')+'</g>'+
+  '<g class="org" data-o="rer"><path class="hitS" d="M184 164 A150 150 0 0 0 184 376"/>'+arc('M202 182 A125 125 0 0 0 202 358')+arc('M184 164 A150 150 0 0 0 184 376')+arc('M166 146 A175 175 0 0 0 166 394')+
+    dot(140,270,7,'#F277A8')+dot(149,219,7,'#F277A8')+dot(149,321,7,'#F277A8')+dot(115,270,7,'#F277A8')+dot(128,203,7,'#F277A8')+dot(128,337,7,'#F277A8')+'</g>'+
+  '<g class="org" data-o="nuc"><circle cx="290" cy="270" r="95" fill="#6C8BFF" fill-opacity=".85"/><circle cx="305" cy="255" r="30" fill="#B7C6FF"/></g>'+
+  '<g class="org" data-o="cyt">'+dot(400,180,7,'#F277A8')+dot(420,212,7,'#F277A8')+dot(390,440,7,'#F277A8')+dot(620,300,7,'#F277A8')+dot(250,410,7,'#F277A8')+dot(470,560,7,'#F277A8')+'</g>'+
+  '</g></svg>';
+}
+$$('[data-cell]').forEach(function(b,k){b.innerHTML=cellSVG(k)});
+$$('.cover .org').forEach(function(g,i){g.style.animationDelay=(0.15*i)+'s'});
+/* Célula interactiva */
+(function(){
+  var box=$('[data-cell="int"]');var svg=$('svg',box);svg.classList.add('int');
+  var panel=$('#opanel'),chips=$('#ochips');
+  Object.keys(ORG).forEach(function(k){var b=document.createElement('button');b.className='chip';b.dataset.o=k;b.style.setProperty('--c',ORG[k].c);b.textContent=ORG[k].n;chips.appendChild(b)});
+  function sel(k){
+    var o=ORG[k];svg.classList.add('focus');
+    $$('.org',svg).forEach(function(g){g.classList.toggle('sel',g.dataset.o===k)});
+    $$('.chip',chips).forEach(function(c){c.classList.toggle('on',c.dataset.o===k)});
+    panel.style.setProperty('--c',o.c);
+    var tags=o.m.length?o.m.map(function(m){return '<span style="--c:'+MOL[m][1]+'">'+MOL[m][0]+'</span>'}).join(''):'<span style="--c:#A3B4CB">Dirige a todos a través de los genes</span>';
+    panel.innerHTML='<h3>'+o.n+'</h3><p>'+o.f+'</p><div class="mtags">'+tags+'</div>';
+  }
+  svg.addEventListener('pointerover',function(e){var g=e.target.closest('.org');if(g)sel(g.dataset.o)});
+  svg.addEventListener('click',function(e){var g=e.target.closest('.org');if(g)sel(g.dataset.o)});
+  chips.addEventListener('click',function(e){var c=e.target.closest('.chip');if(c)sel(c.dataset.o)});
+})();
+
+/* ================= Mapa ================= */
+$('#mapf').addEventListener('click',function(e){var b=e.target.closest('[data-f]');if(!b)return;$('#maptbl').dataset.f=b.dataset.f;$$('#mapf .btn').forEach(function(x){x.classList.toggle('on',x===b)})});
+
+/* ================= Origen ================= */
+(function(){
+  var R={
+    si:{c:'#4CC9F0',h:'Ribosomas unidos al RE rugoso',d:'Destino: secreción, membrana plasmática, lisosomas, RE y Golgi.',p:'La SRP reconoce el péptido señal, frena la traducción y acopla el ribosoma al translocón del RE. La proteína entra al RE mientras se sintetiza. Ejemplo: la insulina.',f:['ARNm','Ribosoma','SRP','Translocón del RE','Lumen del RE']},
+    no:{c:'#F277A8',h:'Ribosomas libres en el citosol',d:'Destino: citosol, núcleo, mitocondrias y peroxisomas.',p:'La proteína se traduce completa en el citosol y después viaja guiada por señales de dirección propias de cada organelo. Ejemplo: las enzimas de la glucólisis.',f:['ARNm','Ribosoma libre','Proteína completa','Señal de destino','Organelo']}
+  };
+  $('#origenbtns').addEventListener('click',function(e){
+    var b=e.target.closest('[data-path]');if(!b)return;var r=R[b.dataset.path];
+    $$('#origenbtns .btn').forEach(function(x){x.classList.toggle('on',x===b)});
+    var fl='';r.f.forEach(function(t,i){if(i)fl+='<span class="ar" style="animation-delay:'+(i*0.22-0.1)+'s">→</span>';fl+='<span class="nd" style="animation-delay:'+(i*0.22)+'s">'+t+'</span>'});
+    $('#origenres').innerHTML='<div class="card" style="--c:'+r.c+'"><h3>'+r.h+'</h3><p class="dest">'+r.d+'</p><p>'+r.p+'</p><div class="flow" style="--c:'+r.c+'">'+fl+'</div></div>';
+  });
+})();
+
+/* ================= Stepper genérico ================= */
+function stepper(root,n,render,ms){
+  var i=0,timer=null,play=$('[data-a="play"]',root),label=play?play.textContent:'';
+  function stop(){if(timer){clearInterval(timer);timer=null}if(play)play.textContent=label}
+  function go(j){i=Math.max(0,Math.min(n-1,j));render(i)}
+  root.addEventListener('click',function(e){
+    var b=e.target.closest('[data-a]');if(!b)return;var a=b.dataset.a;
+    if(a==='play'){
+      if(timer){stop();return}
+      if(i>=n-1)go(0);
+      play.textContent='Pausar';
+      timer=setInterval(function(){if(i>=n-1){stop();return}go(i+1)},ms);
+    }else if(a==='next'){stop();go(i+1)}
+    else if(a==='prev'){stop();go(i-1)}
+    else if(a==='reset'){stop();go(0)}
+  });
+  stoppers.push(stop);
+  go(0);
+}
+
+/* ================= Ruta secretora ================= */
+(function(){
+  var root=$('#ruta'),st=$$('.st',root),dot=$('.pdot',root),fill=$('.tfill',root),h=$('.sh',root),p=$('.sp',root),sn=$('.stepn',root),card=$('.stepbar .card',root);
+  var S=[
+    ['Núcleo','El gen se transcribe a ARNm, que sale al citosol por los poros nucleares. Un ribosoma empieza a traducirlo.'],
+    ['RE rugoso','La SRP lleva el ribosoma al RE y la proteína entra mientras se sintetiza. Chaperonas como BiP la pliegan, se forman puentes disulfuro y comienza la N-glicosilación (anillo naranja).'],
+    ['Vesícula COPII','Control de calidad: solo las proteínas bien plegadas salen del RE en vesículas COPII hacia el Golgi. Las defectuosas van a ERAD.'],
+    ['Aparato de Golgi','Recorre las cisternas de cis a trans: se remodelan sus azúcares, se añaden O-glicanos y las enzimas lisosomales reciben la etiqueta manosa-6-fosfato.'],
+    ['Red trans-Golgi','Centro de clasificación: empaca cada proteína en la vesícula correcta según sus señales.'],
+    ['Destino','Tres salidas: secreción al exterior (como la insulina), la membrana plasmática o el lisosoma.']
+  ];
+  stepper(root,S.length,function(i){
+    st.forEach(function(e,j){e.classList.toggle('on',j===i);e.classList.toggle('done',j<i)});
+    var c=parseFloat(st[i].style.left)+100;
+    dot.style.left=(c-18)+'px';fill.style.width=(c-100)+'px';
+    dot.classList.toggle('s1',i>=1&&i<3);dot.classList.toggle('s2',i>=3);
+    card.style.setProperty('--c',st[i].style.getPropertyValue('--c'));
+    h.textContent=S[i][0];p.textContent=S[i][1];sn.textContent='Paso '+(i+1)+' de '+S.length;
+  },2800);
+})();
+
+/* ================= Pestañas de degradación ================= */
+$('#degtabs').addEventListener('click',function(e){
+  var b=e.target.closest('[data-tab]');if(!b)return;
+  $$('#degtabs .btn').forEach(function(x){x.classList.toggle('on',x===b)});
+  $$('#degpanels .tp').forEach(function(p,j){p.classList.toggle('on',j===+b.dataset.tab)});
+  var p=$$('#degpanels .tp')[+b.dataset.tab];
+  $$('.flow > *',p).forEach(function(n,k){n.style.animation='none';void n.offsetWidth;n.style.animation='';n.style.animationDelay=(k*0.12)+'s'});
+});
+$$('#degpanels .flow > *').forEach(function(n,k,a){n.style.animationDelay=((k%9)*0.12)+'s'});
+
+/* ================= Glucosa ================= */
+(function(){
+  var root=$('#gluc'),nodes=$$('.gn',root),dot=$('.gdot',root),h=$('.sh',root),p=$('.sp',root),card=$('.stepbar .card',root);
+  var K={atp:$('[data-k="atp"]',root),nadh:$('[data-k="nadh"]',root),fadh:$('[data-k="fadh"]',root),co2:$('[data-k="co2"]',root)};
+  var cx=[140,415,745,1000,1275];
+  var S=[
+    ['Glucosa en el citosol','Una molécula de 6 carbonos entra a la célula por transportadores de membrana.',[0,0,0,0]],
+    ['Glucólisis, en el citosol','Diez reacciones la parten en 2 piruvatos. Ganancia neta: 2 ATP y 2 NADH, sin necesidad de oxígeno.',[2,2,0,0]],
+    ['Piruvato → acetil-CoA','Cada piruvato entra a la mitocondria y la piruvato deshidrogenasa lo convierte en acetil-CoA, liberando CO₂.',[2,4,0,2]],
+    ['Ciclo de Krebs','Cada acetil-CoA da una vuelta: se liberan 2 CO₂ y se cargan NADH, FADH₂ y GTP. La glucosa da 2 vueltas.',[4,10,2,6]],
+    ['Cadena respiratoria','NADH y FADH₂ entregan sus electrones; el gradiente de protones mueve la ATP sintasa. Total: ≈ 30–32 ATP por glucosa.',['≈30–32',10,2,6]]
+  ];
+  var col=['#FFB547','#FFB547','#C77DFF','#C77DFF','#E8EEF6'];
+  stepper(root,S.length,function(i){
+    nodes.forEach(function(n,j){n.classList.toggle('on',j===i);n.classList.toggle('done',j<i)});
+    dot.style.left=(cx[i]-11)+'px';dot.style.background=col[i];dot.style.boxShadow='0 0 16px '+col[i];
+    card.style.setProperty('--c',col[i]);
+    h.textContent=S[i][0];p.textContent=S[i][1];
+    K.atp.textContent=S[i][2][0];K.nadh.textContent=S[i][2][1];K.fadh.textContent=S[i][2][2];K.co2.textContent=S[i][2][3];
+  },3200);
+})();
+
+/* ================= β-oxidación ================= */
+(function(){
+  var root=$('#beta'),cs=$('.cs',root),tray=$('.tray',root),st=$('.bstat',root),play=$('[data-a="play"]',root);
+  var V=$('[data-k="v"]',root),AC=$('[data-k="ac"]',root),N=$('[data-k="n"]',root),F=$('[data-k="f"]',root);
+  var b=[],k=0,timer=null;
+  function reset(){cs.innerHTML='';tray.innerHTML='';b=[];for(var i=0;i<16;i++){var e=document.createElement('i');if(Math.floor(i/2)%2)e.className='a';cs.appendChild(e);b.push(e)}k=0;upd();st.textContent='El ácido graso entra a la mitocondria gracias a la carnitina. Toca "Siguiente vuelta".'}
+  function chip(){var d=document.createElement('div');d.className='ac';d.textContent='Acetil-CoA';tray.appendChild(d)}
+  function cut(j){b[2*j].classList.add('g');b[2*j+1].classList.add('g');chip()}
+  function upd(){V.textContent=k+'/7';AC.textContent=tray.children.length;N.textContent=k;F.textContent=k}
+  function next(){
+    if(k>=7)return false;
+    k++;cut(k-1);
+    if(k===7){cut(7);st.textContent='Vuelta 7: el último fragmento de 4 carbonos se parte en 2 acetil-CoA. Total: 8 acetil-CoA, 7 NADH y 7 FADH₂.'}
+    else{st.textContent='Vuelta '+k+' de 7: se cortan 2 carbonos y salen 1 acetil-CoA, 1 NADH y 1 FADH₂.'}
+    upd();return true;
+  }
+  function stop(){if(timer){clearInterval(timer);timer=null}play.textContent='Automático'}
+  root.addEventListener('click',function(e){
+    var a=e.target.closest('[data-a]');if(!a)return;a=a.dataset.a;
+    if(a==='next'){stop();next()}
+    else if(a==='reset'){stop();reset()}
+    else if(a==='play'){if(timer){stop();return}if(k>=7)reset();play.textContent='Pausar';timer=setInterval(function(){if(!next())stop()},1400)}
+  });
+  stoppers.push(stop);reset();
+})();
+
+/* ================= Integración ================= */
+(function(){
+  var T={all:'El acetil-CoA es el punto de encuentro: los tres tipos de moléculas terminan alimentando el mismo ciclo de Krebs para producir ATP.',
+    p:'Proteínas → aminoácidos. Se les quita el grupo amino (que termina como urea) y su esqueleto de carbono entra como acetil-CoA o directo como intermediario del ciclo.',
+    c:'Carbohidratos → glucosa → piruvato en el citosol; dentro de la mitocondria el piruvato se convierte en acetil-CoA.',
+    l:'Lípidos → ácidos grasos que la β-oxidación corta, dentro de la mitocondria, en muchos acetil-CoA.'};
+  var box=$('#integ');$('#iexp').textContent=T.all;
+  $('#integf').addEventListener('click',function(e){var b=e.target.closest('[data-f]');if(!b)return;box.dataset.f=b.dataset.f;$('#iexp').textContent=T[b.dataset.f];$$('#integf .btn').forEach(function(x){x.classList.toggle('on',x===b)})});
+})();
+
+/* ================= Enfermedades ================= */
+(function(){
+  var D=[
+    {n:'Tay-Sachs',o:'Lisosoma',oc:'#FF6B6B',m:'Lípido',f:'Falta la enzima hexosaminidasa A.',a:'El gangliósido GM2 se acumula en los lisosomas de las neuronas.',e:'Daño neurológico progresivo.'},
+    {n:'Pompe',o:'Lisosoma',oc:'#FF6B6B',m:'Carbohidrato',f:'Falta la α-glucosidasa ácida.',a:'El glucógeno se acumula dentro de los lisosomas.',e:'Debilidad muscular; en la forma infantil también afecta el corazón.'},
+    {n:'Enfermedad de células I',o:'Aparato de Golgi',oc:'#FFB547',m:'Proteína',f:'El Golgi no marca las enzimas lisosomales con manosa-6-fosfato.',a:'Las enzimas se secretan fuera de la célula y los lisosomas se llenan de material sin digerir.',e:'Alteraciones del esqueleto y del desarrollo.'},
+    {n:'Fibrosis quística (ΔF508)',o:'RE',oc:'#4CC9F0',m:'Proteína',f:'La proteína CFTR se pliega mal.',a:'El control de calidad del RE (ERAD) la destruye antes de que llegue a la membrana.',e:'Moco espeso en pulmones y páncreas.'},
+    {n:'Zellweger',o:'Peroxisoma',oc:'#9BE564',m:'Lípido',f:'Los peroxisomas no se forman correctamente.',a:'Se acumulan ácidos grasos de cadena muy larga.',e:'Afecta el cerebro, el hígado y los riñones.'}
+  ];
+  var list=$('#dlist'),panel=$('#dpanel');
+  D.forEach(function(d,i){var b=document.createElement('button');b.className='dbtn';b.style.setProperty('--c',d.oc);b.innerHTML=d.n+'<small>'+d.o+'</small>';b.onclick=function(){sel(i)};list.appendChild(b)});
+  function sel(i){var d=D[i];$$('.dbtn',list).forEach(function(b,j){b.classList.toggle('on',j===i)});panel.style.setProperty('--c',d.oc);
+    panel.innerHTML='<h3>'+d.n+'</h3><div class="who"><span>'+d.o+'</span><span style="background:#E8EEF6">Molécula afectada: '+d.m+'</span></div><dl><dt>Qué falla</dt><dd>'+d.f+'</dd><dt>Qué pasa en la célula</dt><dd>'+d.a+'</dd><dt>Consecuencia</dt><dd>'+d.e+'</dd></dl>'}
+  sel(0);
+})();
+
+/* ================= Cuestionario ================= */
+(function(){
+  var Q=[
+    {k:'¿Qué organelo soy?',q:'Tengo pH ácido y digiero de todo: proteínas, glucógeno y lípidos.',o:['Aparato de Golgi','Lisosoma','Peroxisoma','RE liso'],a:1,e:'El lisosoma usa hidrolasas ácidas que funcionan a pH ≈ 4,5–5.'},
+    {k:'¿Qué organelo soy?',q:'Pego la etiqueta manosa-6-fosfato para enviar enzimas al lisosoma.',o:['RE rugoso','Lisosoma','Aparato de Golgi','Núcleo'],a:2,e:'El Golgi marca las enzimas lisosomales; sin esa marca se secretan (enfermedad de células I).'},
+    {k:'¿Qué organelo soy?',q:'Acorto ácidos grasos de cadena muy larga y produzco H₂O₂.',o:['Mitocondria','Peroxisoma','Lisosoma','Citosol'],a:1,e:'El peroxisoma hace esa β-oxidación y usa catalasa para eliminar el H₂O₂.'},
+    {k:'¿Qué organelo soy?',q:'En mí se encuentran carbohidratos, lípidos y proteínas en un mismo ciclo.',o:['RE liso','Aparato de Golgi','Mitocondria','Proteasoma'],a:2,e:'Los tres terminan como acetil-CoA o intermediarios del ciclo de Krebs, en la mitocondria.'},
+    {k:'¿Verdadero o falso?',q:'Las proteínas que se secretan se fabrican en ribosomas libres.',o:['Verdadero','Falso'],a:1,e:'Se fabrican en ribosomas unidos al RE rugoso, guiadas por el péptido señal.'},
+    {k:'¿Verdadero o falso?',q:'La glucólisis ocurre dentro de la mitocondria.',o:['Verdadero','Falso'],a:1,e:'Ocurre en el citosol; solo el piruvato entra a la mitocondria.'},
+    {k:'¿Verdadero o falso?',q:'El colesterol se sintetiza en el retículo endoplasmático liso.',o:['Verdadero','Falso'],a:0,e:'Su enzima clave, la HMG-CoA reductasa, está en la membrana del RE.'},
+    {k:'Elige la respuesta',q:'¿Qué marca a una proteína para que el proteasoma la destruya?',o:['Manosa-6-fosfato','Ubiquitina','Péptido señal','Carnitina'],a:1,e:'Una cadena de ubiquitina funciona como etiqueta de destrucción.'},
+    {k:'Elige la respuesta',q:'¿Cuántos acetil-CoA produce la β-oxidación completa del ácido palmítico (16 carbonos)?',o:['7','8','16','2'],a:1,e:'Son 7 vueltas, pero la última parte un fragmento de 4 carbonos en 2: en total 8 acetil-CoA.'},
+    {k:'Elige la respuesta',q:'En la fibrosis quística (ΔF508), ¿qué destruye la proteína CFTR mal plegada?',o:['El lisosoma','ERAD y el proteasoma','El peroxisoma','El aparato de Golgi'],a:1,e:'El control de calidad del RE la envía al proteasoma antes de que llegue a la membrana.'}
+  ];
+  var box=$('#quiz'),i=0,score=0;
+  function top(){return '<div class="qtop"><span>Pregunta '+(i+1)+' de '+Q.length+'</span><div class="qbar"><i style="width:'+(i/Q.length*100)+'%"></i></div><span class="qscore">Puntaje: '+score+'</span></div>'}
+  function render(){
+    if(i>=Q.length)return end();
+    var q=Q[i],L='ABCD',opts='';
+    q.o.forEach(function(t,j){opts+='<button class="opt" data-j="'+j+'"><span class="l">'+(q.o.length===2?(j?'F':'V'):L[j])+'</span>'+t+'</button>'});
+    box.innerHTML=top()+'<p class="qkind">'+q.k+'</p><h3 class="qq">'+q.q+'</h3><div class="opts">'+opts+'</div><div class="fb" aria-live="polite"></div>';
+  }
+  function answer(j){
+    var q=Q[i],ok=j===q.a;if(ok)score++;
+    $$('.opt',box).forEach(function(b,x){b.disabled=true;if(x===q.a)b.classList.add('ok');else if(x===j)b.classList.add('no');else b.classList.add('dim')});
+    $('.qscore',box).textContent='Puntaje: '+score;
+    $('.fb',box).innerHTML='<p><strong class="'+(ok?'good':'badt')+'">'+(ok?'¡Correcto! ':'Incorrecto. ')+'</strong>'+q.e+'</p><button class="btn primary" style="--c:var(--mito)" data-q="next">'+(i===Q.length-1?'Ver resultado':'Siguiente pregunta')+'</button>';
+    $('[data-q="next"]',box).focus();
+  }
+  function end(){
+    var m=score>=9?'¡Excelente! Dominan la fábrica celular.':score>=6?'Muy bien. Repasen las preguntas que fallaron y quedarán listos.':'Vale la pena repasar las secciones y volver a intentarlo.';
+    box.innerHTML='<div class="qend"><p class="qkind" style="margin:0">Resultado final</p><div class="sc">'+score+'/'+Q.length+'</div><p>'+m+'</p><button class="btn primary" style="--c:var(--mito)" data-q="again">Repetir el cuestionario</button></div>';
+  }
+  box.addEventListener('click',function(e){
+    var o=e.target.closest('.opt');if(o&&!o.disabled){answer(+o.dataset.j);return}
+    var n=e.target.closest('[data-q]');if(!n)return;
+    if(n.dataset.q==='next'){i++;render()}else{i=0;score=0;render()}
+  });
+  render();
+})();
+
+show(0);
+})();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js" crossorigin></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/htm@3.1.1/dist/htm.umd.js" crossorigin></script>
+<script>
+(function(){
+"use strict";
+var D=window.deck,root=document.getElementById('deckui'),vp=document.getElementById('viewport');
+/* Respaldo si React no carga: barra mínima */
+if(!window.React||!window.ReactDOM||!window.htm){
+  root.innerHTML='<div class="dock" style="--acc:#C77DFF"><button class="ib nav" id="fp">‹ Anterior</button><span style="margin:0 auto;color:#A3B4CB" id="fc"></span><button class="ib nav" id="fn">Siguiente ›</button></div>';
+  function upd(){document.getElementById('fc').textContent=(D.cur()+1)+' / '+D.slides.length}
+  document.getElementById('fp').onclick=function(){D.go(D.cur()-1)};
+  document.getElementById('fn').onclick=function(){D.go(D.cur()+1)};
+  window.addEventListener('deck:change',upd);upd();return;
+}
+var R=React,h=R.createElement,html=htm.bind(h),useState=R.useState,useEffect=R.useEffect,useRef=R.useRef,useMemo=R.useMemo;
+var SEC={g:'General',p:'Proteínas',c:'Carbohidratos',l:'Lípidos'};
+var N=D.slides.length;
+
+/* Íconos */
+var I={
+  prev:html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>`,
+  next:html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>`,
+  grid:html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg>`,
+  notes:html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 4h14v16H5zM8 9h8M8 13h8M8 17h5"/></svg>`,
+  fs:html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>`,
+  x:html`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>`,
+  search:html`<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>`
+};
+
+function Progress(p){
+  return html`<div class="segs" role="group" aria-label="Progreso por diapositiva">
+    ${D.slides.map(function(s,i){
+      var cls='seg'+(i<p.cur?' done':'')+(i===p.cur?' cur':'');
+      return html`<button key=${i} class=${cls} style=${{'--c':D.secCol[s.sec]}} onClick=${function(){D.go(i)}} aria-label=${(i+1)+'. '+s.title} aria-current=${i===p.cur?'step':null}>
+        <span class="tip">${i+1}. ${s.title}</span></button>`;
+    })}
+  </div>`;
+}
+
+function IndexModal(p){
+  var st=useState(''),q=st[0],setQ=st[1];
+  var sf=useState('all'),f=sf[0],setF=sf[1];
+  var inp=useRef(null);
+  useEffect(function(){if(inp.current)inp.current.focus()},[]);
+  var counts=useMemo(function(){var c={all:N};D.slides.forEach(function(s){c[s.sec]=(c[s.sec]||0)+1});return c},[]);
+  var norm=function(t){return t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')};
+  var list=D.slides.map(function(s,i){return Object.assign({i:i},s)}).filter(function(s){
+    if(f!=='all'&&s.sec!==f)return false;
+    if(!q)return true;var n=norm(q);return norm(s.title).indexOf(n)>=0||norm(s.notes).indexOf(n)>=0;
+  });
+  function pick(i){D.go(i);p.onClose()}
+  function onKey(e){if(e.key==='Enter'&&list.length&&e.target===inp.current){pick(list[0].i)}}
+  var filters=[['all','Todas','#E8EEF6'],['g','General',D.secCol.g],['p','Proteínas',D.secCol.p],['c','Carbohidratos',D.secCol.c],['l','Lípidos',D.secCol.l]];
+  return html`<div class="ov" onClick=${function(e){if(e.target===e.currentTarget)p.onClose()}}>
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Índice de diapositivas">
+      <div class="mh">
+        <h2>Ir a una diapositiva</h2>
+        <label class="search">${I.search}<input ref=${inp} value=${q} onInput=${function(e){setQ(e.target.value)}} onKeyDown=${onKey} placeholder="Buscar tema o palabra…" aria-label="Buscar diapositiva"/></label>
+        <button class="ib" onClick=${p.onClose} aria-label="Cerrar índice">${I.x}</button>
+      </div>
+      <div class="filt">
+        ${filters.map(function(x){return html`<button key=${x[0]} class="fchip" style=${{'--c':x[2]}} aria-pressed=${f===x[0]} onClick=${function(){setF(x[0])}}><i></i>${x[1]} <b>${counts[x[0]]}</b></button>`})}
+      </div>
+      <div class="grid">
+        ${list.length?list.map(function(s,k){
+          var c=D.secCol[s.sec];
+          return html`<button key=${s.i} class=${'sc'+(s.i===p.cur?' cur':'')} style=${{'--c':c,animationDelay:(k*0.03)+'s'}} onClick=${function(){pick(s.i)}}>
+            <span class="top"><span>${SEC[s.sec]}</span>${s.i===p.cur?html`<span class="now">Actual</span>`:null}</span>
+            <span class="num">${String(s.i+1).padStart(2,'0')}</span>
+            <span class="ttl">${s.title}</span>
+            <span class="pv">${s.notes}</span>
+          </button>`;
+        }):html`<p class="empty">No hay diapositivas que coincidan con “${q}”.</p>`}
+      </div>
+      <p class="kbd"><kbd>←</kbd> <kbd>→</kbd> navegar · <kbd>I</kbd> índice · <kbd>N</kbd> notas · <kbd>F</kbd> pantalla completa · <kbd>Esc</kbd> cerrar</p>
+    </div>
+  </div>`;
+}
+
+function Notes(p){
+  var s=D.slides[p.cur],sz=useState(17),size=sz[0],setSize=sz[1];
+  return html`<section class="drawer" style=${{'--c':D.secCol[s.sec]}} aria-label="Notas del expositor">
+    <div class="dh">
+      <div style=${{flex:1,minWidth:0}}><div class="k">Notas · ${p.cur+1}/${N}</div><h4>${s.title}</h4></div>
+      <button class="ib" onClick=${function(){setSize(Math.max(14,size-1))}} aria-label="Reducir texto">A−</button>
+      <button class="ib" onClick=${function(){setSize(Math.min(24,size+1))}} aria-label="Aumentar texto">A+</button>
+      <button class="ib" onClick=${p.onClose} aria-label="Cerrar notas">${I.x}</button>
+    </div>
+    <div class="db" style=${{fontSize:size+'px'}} key=${p.cur}>${s.notes}</div>
+  </section>`;
+}
+
+function App(){
+  var sc=useState(D.cur()),cur=sc[0],setCur=sc[1];
+  var sn=useState(false),notes=sn[0],setNotes=sn[1];
+  var si=useState(false),idx=si[0],setIdx=si[1];
+  useEffect(function(){
+    function on(e){setCur(e.detail.i)}
+    window.addEventListener('deck:change',on);return function(){window.removeEventListener('deck:change',on)};
+  },[]);
+  useEffect(function(){window.deckModal=idx},[idx]);
+  useEffect(function(){
+    function key(e){
+      if(e.altKey||e.ctrlKey||e.metaKey)return;
+      var inInput=e.target.closest&&e.target.closest('input,textarea');
+      if(e.key==='Escape'){if(idx)setIdx(false);else if(notes)setNotes(false);return}
+      if(inInput||idx)return;
+      if(e.key==='n'||e.key==='N')setNotes(function(v){return !v});
+      else if(e.key==='i'||e.key==='I'){e.preventDefault();setIdx(true)}
+      else if((e.key==='f'||e.key==='F')&&D.fsOK)D.fs();
+    }
+    document.addEventListener('keydown',key);return function(){document.removeEventListener('keydown',key)};
+  },[idx,notes]);
+  var s=D.slides[cur],acc=D.secCol[s.sec];
+  return html`<${R.Fragment}>
+    <nav class="dock" style=${{'--acc':acc}} aria-label="Controles de la presentación">
+      <button class="ib nav" onClick=${function(){D.go(cur-1)}} disabled=${cur===0} aria-label="Diapositiva anterior">${I.prev}<span class="lbl">Anterior</span></button>
+      <button class="ib" onClick=${function(){setIdx(true)}} aria-haspopup="dialog" aria-label="Índice">${I.grid}<span class="lbl">Índice</span></button>
+      <div class="track2">
+        <div class="tmeta"><span class="tt"><span key=${cur}>${s.title}</span></span><span><b style=${{color:'var(--ink)'}}>${cur+1}</b> / ${N} <span class="hide-sm">· ${SEC[s.sec]}</span></span></div>
+        <${Progress} cur=${cur}/>
+      </div>
+      <button class="ib" onClick=${function(){setNotes(!notes)}} aria-pressed=${notes} aria-label="Notas del expositor">${I.notes}<span class="lbl">Notas</span></button>
+      ${D.fsOK?html`<button class="ib hide-sm" onClick=${D.fs} aria-label="Pantalla completa">${I.fs}</button>`:null}
+      <button class="ib nav" onClick=${function(){D.go(cur+1)}} disabled=${cur===N-1} aria-label="Diapositiva siguiente"><span class="lbl">Siguiente</span>${I.next}</button>
+    </nav>
+    ${notes?ReactDOM.createPortal(html`<${Notes} cur=${cur} onClose=${function(){setNotes(false)}}/>`,vp):null}
+    ${idx?ReactDOM.createPortal(html`<${IndexModal} cur=${cur} onClose=${function(){setIdx(false)}}/>`,vp):null}
+  </${R.Fragment}>`;
+}
+ReactDOM.createRoot(root).render(html`<${App}/>`);
+})();
+</script>
+</body>
+</html>
